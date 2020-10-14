@@ -55,8 +55,9 @@ const byte MODE_ROM_EMULATOR = 1;
 const byte MODE_ROM_RAM_EMULATOR = 2;
 
 const byte ADDR_BUS[] = {50, 52, A11, A9, A8, A12, A15, A14, 53, 51, 49, 47, 45, 43, 41, 39};
-const byte DATA_BUS[] = {34, 40, 42, 46, 44, 36, 30, 32};
-const byte CTRL_BUS_RD = 20;
+const byte DATA_BUS[] = {34, 40, 42, 44, 46, 36, 30, 32};
+//const byte CTRL_BUS_RD = 20;
+const byte CTRL_BUS_RD = 3;
 const byte CTRL_BUS_WR = 23;
 const byte CTRL_BUS_BUSACK = 25;
 const byte CTRL_BUS_WAIT = 27;
@@ -68,7 +69,8 @@ const byte CTRL_BUS_IORQ = A13;
 const byte CTRL_BUS_MREQ = 22;
 const byte CTRL_BUS_HALT = 24;
 const byte CTRL_BUS_NMI = 26;
-const byte CTRL_BUS_CLK= 21;
+//const byte CTRL_BUS_CLK= 21;
+const byte CTRL_BUS_CLK= 2;
 const byte CTRL_BUS_INT = 28;
 const byte PWR_GND = 37;
 const byte PWR_VCC = 38;
@@ -88,8 +90,8 @@ const byte PWR_VCC = 38;
 */
 const byte MODE = MODE_ROM_EMULATOR;
 
-//const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0xC3, 0x00, 0x00};
-const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00};
+const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0xC3, 0x00, 0x00};
+//const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00};
 
 
 
@@ -97,6 +99,18 @@ const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00};
 
 void setup() {
   Serial.begin(57600);
+  Serial.print("Started in mode ");
+  switch(MODE) {
+    case MODE_DEBUGGER:
+    Serial.println("debugger");
+    break;    
+    case MODE_ROM_EMULATOR:
+    Serial.println("rom emulator");
+    break;
+    case MODE_ROM_RAM_EMULATOR:
+    Serial.println("rom/ram emulator");
+    break;
+  }
   for(int pin=0; pin < 16; pin++) {
     pinMode(ADDR_BUS[pin], INPUT);
   }  
@@ -121,19 +135,6 @@ void setup() {
   pinMode(PWR_VCC, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(CTRL_BUS_CLK), onClk, RISING);
-
-
-
-
-
-
-  
-  unsigned int data = ROM_DATA[4];
-  writeByteToDataBus(data);
-  
-  char output[30] = {};
-  sprintf(output, "%04x  r-  %02x Emu ROM read", 4, data);
-  Serial.println(output);
   
 }
 
@@ -208,19 +209,16 @@ void setDataBusAs(byte mode){
   }  
 }
 
-void writeByteToDataBus(byte toWrite) {
+void writeByteToDataBus(byte j) {
   setDataBusAs(OUTPUT);
-  unsigned i;
-  for (i = 1 << 7; i > 0; i = i / 2){
-      if (toWrite & i) {
-        digitalWrite(DATA_BUS[i], HIGH);
-        Serial.print(DATA_BUS[i]);
-        Serial.print("->1  ");
-      } else {
-        digitalWrite(DATA_BUS[i], LOW);    
-        Serial.print(DATA_BUS[i]);
-        Serial.print("->0  ");
-      }
+  for (int n=0; n<8; n++)
+  {
+    if((0x01&j) < 0x01)
+    {
+      digitalWrite(DATA_BUS[n],LOW);
+    } else {
+      digitalWrite(DATA_BUS[n],HIGH);
+    }
+    j>>=1;
   }
-  Serial.println(" ");
 }
