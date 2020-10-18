@@ -55,7 +55,8 @@ const byte MODE_ROM_EMULATOR = 1;
 const byte MODE_ROM_RAM_EMULATOR = 2;
 
 const byte ADDR_BUS[] = {50, 52, A11, A9, A8, A12, A15, A14, 53, 51, 49, 47, 45, 43, 41, 39};
-const byte DATA_BUS[] = {34, 40, 42, 44, 46, 36, 30, 32};
+//const byte DATA_BUS[] = {34, 40, 42, 44, 46, 36, 30, 32};
+const byte DATA_BUS[] = {3, 4, 5, 6, 7, 8, 9,10};
 //const byte CTRL_BUS_RD = 20;
 const byte CTRL_BUS_RD = 3;
 const byte CTRL_BUS_WR = 23;
@@ -88,7 +89,7 @@ const byte PWR_VCC = 38;
  *      MODE_ROM_EMULATOR = Emulates rom with the contents of ROM_DATA
  *      MODE_ROM_RAM_EMULATOR = Emulates ram
 */
-const byte MODE = MODE_ROM_EMULATOR;
+const byte MODE = MODE_DEBUGGER;
 
 const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0xC3, 0x00, 0x00};
 //const byte ROM_DATA[] = {0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00};
