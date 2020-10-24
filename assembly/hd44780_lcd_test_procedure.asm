@@ -36,4 +36,3 @@ ld a,%00100001
 out (LCD_DATA_REG),a
 
 halt
-

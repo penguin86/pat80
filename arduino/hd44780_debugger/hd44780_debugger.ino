@@ -1,11 +1,9 @@
 /* HD44780 Character display debugger */
 
-#define EN 2
-#define RS 11
-const byte DATA_BUS[] = {10, 9, 8, 7, 6, 5, 4, 3};
+#define EN 11
+const byte DATA_BUS[] = {3, 4, 5, 6, 7, 8, 9, 10};
 
 void setup() {
-  pinMode(RS, INPUT);
   pinMode(EN, INPUT);
   for(int pin=0; pin < 8; pin++) {
     pinMode(DATA_BUS[pin], INPUT);
@@ -13,9 +11,9 @@ void setup() {
 
   Serial.begin(57600);
   Serial.println("HD44780 debugger");
-  Serial.println("DATA BUS    HEX     RS   EN");
+  Serial.println("DATA BUS    HEX     EN");
 
-  attachInterrupt(digitalPinToInterrupt(EN), onClk, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(2), onClk, FALLING);
 }
 
 void loop() {}
@@ -28,7 +26,10 @@ void onClk() {
       data = (data << 1) + b;   // Shifta di 1 e aggiunge il bit corrente. Serve per ricostruire il numero da binario
     }
     
-    char output[30] = {};
-    sprintf(output, "    0x%02x    %c    %c", data, digitalRead(RS) ? 'D' : 'I', digitalRead(EN) ? 'H' : 'L');
+    char output[50] = {};
+    sprintf(output, "    0x%02x    %c", 
+      data, 
+      digitalRead(EN) ? 'D' : 'I'
+    );
     Serial.println(output);
 }
