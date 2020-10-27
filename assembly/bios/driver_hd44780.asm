@@ -1,6 +1,9 @@
 ; HD44780 20x4 characters LCD display driver
 ; @author Daniele Verducci
 
+; variables
+;lcd_cur_x: EQU DRV_VAR_SPACE
+;lcd_cur_y: lcd_cur_x + 1
 
 ; functions
 
@@ -36,7 +39,10 @@ lcd_print:
 ; @param B X-axis position (0 to 19)
 ; @param C Y-axis position (0 to 3)
 lcd_locate:
-    ; TODO
+    ld a,0xFE
+    out (LCD_INSTR_REG),a   ; warns the lcd microcontroller that a command is coming
+    ld a,0xA8
+    out (LCD_INSTR_REG),a   ; place cursor to first char of second line
     ret
 
 ; Clears the screen
