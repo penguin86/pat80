@@ -1,42 +1,8 @@
-; Pat80 BIOS v0.01
-; @author: Daniele Verducci
-; 
-; ROM is at 0x00
-; RAM is at 0x80
-; LCD is at I/O 0x00 and 0x01
-
-jp sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
+; HD44780 20x4 characters LCD display driver
+; @author Daniele Verducci
 
 
-; SYSTEM CONFIGURATION
-LCD_INSTR_REG: EQU %00000000
-LCD_DATA_REG: EQU %00000001
-
-
-; CONSTANTS
-SYSINIT_GREETING:
-    DB "Pat80 BIOS v0.1     ",0  ; null terminated string
-
-
-
-
-
-
-
-
-
-
-; System initialization
-sysinit:
-    call lcd_init
-
-    ; write characters to display
-    ld bc, SYSINIT_GREETING
-    call lcd_write      ; write string to screen
-    call lcd_cls        ; clear screen
-
-    halt
-
+; functions
 
 lcd_init:
     ;reset procedure
@@ -57,13 +23,14 @@ lcd_init:
 
 ; Writes text starting from current cursor position
 ; @param BC Pointer to a null-terminated string first character
-lcd_write:
+lcd_print:
     ld a, (bc)  ; bc is the pointer to passed string's first char
     cp 0        ; compare A content with 0 (subtract 0 from value and set zero flag Z if result is 0)
     ret z       ; if prev compare is true (Z flag set), string is finished, return
     out (LCD_DATA_REG),a    ; output char
     inc bc ; increment bc to move to next char
-    jp lcd_write
+
+    jp lcd_print
 
 ; Set cursor position
 ; @param B X-axis position (0 to 19)
