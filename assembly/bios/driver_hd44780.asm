@@ -1,5 +1,9 @@
 ; HD44780 20x4 characters LCD display driver
 ; @author Daniele Verducci
+;
+; Requires declaration of following pointers:
+; LCD_INSTR_REG
+; LCD_DATA_REG
 
 ; constants
 LCD_LINES_LEFT: DB 0x80, 0xA8, 0x94, 0xBC  ;array defining lcd command codes for the first char of every line

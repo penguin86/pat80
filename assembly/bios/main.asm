@@ -1,3 +1,5 @@
+jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
+
 ; Pat80 BIOS v0.01
 ; @author: Daniele Verducci
 ; 
@@ -18,8 +20,10 @@
 ;   I/O 7 (0xE0 - 0xFF)
 
 
-jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
-
+; MEMORY CONFIGURATION
+SYS_VAR_SPACE: EQU 0x8000
+DRV_VAR_SPACE: EQU 0x9000
+APP_VAR_SPACE: EQU 0xA000
 
 ; SYSTEM CONFIGURATION
 IO_0: EQU 0x00
@@ -31,25 +35,28 @@ IO_5: EQU 0xA0
 IO_6: EQU 0xC0
 IO_7: EQU 0xE0
 
+; LCD config (IO port 0)
 LCD_INSTR_REG: EQU IO_0
 LCD_DATA_REG: EQU IO_0 + 1
 
-SYS_VAR_SPACE: EQU 0x8000
-DRV_VAR_SPACE: EQU 0x9000
-APP_VAR_SPACE: EQU 0xA000
+; Keyboard config (IO port 1)
+KEYB_A0_REG: EQU IO_1 + %00000001
+KEYB_A1_REG: EQU IO_1 + %00000010
+KEYB_A2_REG: EQU IO_1 + %00000100
+KEYB_A3_REG: EQU IO_1 + %00001000
+KEYB_A4_REG: EQU IO_1 + %00010000
 
 
 ; CONSTANTS
 SYSINIT_GREETING:
     DB "Pat80",0  ; null terminated string
-LIPSUM:
-    DB "Lorem ipsum dolor siadipiscing elit. Sedt amet, consectetur  dapibus nec nullam.",0
 
 
 
 
 
 include 'driver_hd44780.asm'
+include 'driver_keyboard.asm'
 
 ; System initialization
 Sysinit:
@@ -61,49 +68,11 @@ Sysinit:
     ;call Lcd_locate
     
     ; write characters to display
-    ;ld bc, SYSINIT_GREETING
-    ;call Lcd_print      ; write string to screen
+    ld bc, SYSINIT_GREETING
+    call Lcd_print      ; write string to screen
 
-    ld bc, LIPSUM
-    call Lcd_print
+    ; poll keyboard
+    _poll_keyb:
+    call Keyb_read
+    jp poll_keyb
 
-    ;call count
-
-
-    ; IO TEST
-    iotest:
-    ; do not test 0: is lcd
-    ld a,0x00
-    out (IO_1),a
-    ld a,0x00
-    out (IO_2),a
-    ld a,0x00
-    out (IO_3),a
-    ld a,0x00
-    out (IO_4),a
-    ld a,0x00
-    out (IO_5),a
-    ld a,0x00
-    out (IO_6),a
-    ld a,0x00
-    out (IO_7),a
-
-    call Lcd_cls        ; clear screen
-
-    halt
-
-
-; count:
-;     myVar: EQU APP_VAR_SPACE   ; init variable
-;     ld hl, "A"          ; load value into register
-;     ld (myVar), hl      ; copy value into variable
-;     call count_loop
-
-; count_loop:
-;     ld bc, myVar
-;     call lcd_print
-;     ; increm var
-;     ld a, (myVar)
-;     inc a
-;     ld (myVar), a
-;     call count_loop
