@@ -61,6 +61,13 @@ Lcd_print:
     ld (lcd_cur_x), a   ; else set y pos to 0
     jp Lcd_print
 
+; Writes a single character at current cursror position
+; @param A Value of character to print
+Lcd_printc:
+    out (LCD_DATA_REG),a
+    ret
+
+
 ; Set cursor position
 ; @param B X-axis position (0 to 19)
 ; @param C Y-axis position (0 to 3)

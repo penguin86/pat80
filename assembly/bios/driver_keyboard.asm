@@ -27,4 +27,24 @@
 ; Reads the keyboard
 ; @return: a 0-terminated array of keycodes representing the pressed keys
 Keyb_read:
-    in (KEYB_A0_REG),a
+    in a, (KEYB_A0_REG)
+    cp 0
+    jp z, _keyb_read_a1
+    add a, %01000000
+    call Lcd_printc     ; A already contains char to print
+    _loop:
+    in a, (KEYB_A0_REG)
+    cp 0
+    jp nz, _loop
+    ret
+    _keyb_read_a1:
+    in a, (KEYB_A1_REG)
+    cp 0
+    ret z
+    add a, %01010000
+    call Lcd_printc     ; A already contains char to print
+    _loop2:
+    in a, (KEYB_A1_REG)
+    cp 0
+    jp nz, _loop2
+    ret

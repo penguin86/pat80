@@ -74,5 +74,5 @@ Sysinit:
     ; poll keyboard
     _poll_keyb:
     call Keyb_read
-    jp poll_keyb
+    jp _poll_keyb
 
