@@ -2,6 +2,9 @@
 Compilatore assembly: z80asm (da repo debian)
 Compilatore c: sdcc (da repo debian)
 Eeprom flash: minipro (da https://gitlab.com/DavidGriffith/minipro/)
+Disegnatore schemi logici: logisim (jar da sourceforge)
+    Per usarlo su hdpi: `java -Dsun.java2d.uiScale=2 -jar logisim-generic-2.7.1.jar`
+Disegnatore circuiti: fritzing (da repo debian)
 
 # Assembly
 ## Deploy
