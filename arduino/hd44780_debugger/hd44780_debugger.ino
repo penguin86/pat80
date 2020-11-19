@@ -1,10 +1,10 @@
 /* HD44780 Character display debugger */
 
-#define EN 11
-const byte DATA_BUS[] = {3, 4, 5, 6, 7, 8, 9, 10};
+#define EN 2
+const byte DATA_BUS[] = {10, 9, 8, 7, 6, 5, 4, 3};
 
 void setup() {
-  pinMode(EN, INPUT);
+  pinMode(EN, INPUT_PULLUP);
   for(int pin=0; pin < 8; pin++) {
     pinMode(DATA_BUS[pin], INPUT);
   }
@@ -13,7 +13,7 @@ void setup() {
   Serial.println("HD44780 debugger");
   Serial.println("DATA BUS    HEX     EN");
 
-  attachInterrupt(digitalPinToInterrupt(2), onClk, FALLING);
+  attachInterrupt(digitalPinToInterrupt(EN), onClk, FALLING);
 }
 
 void loop() {}
