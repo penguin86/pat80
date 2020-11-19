@@ -105,14 +105,60 @@ VGAX vga;
 
 // Pins
 // VGA
-#define R 
-#define CLK 
+#define VGA_HSYNC 3
+#define VGA_VSYNC 9
+#define VGA_COLOR1 6
+#define VGA_COLOR2 7
+#define CLK 8
+#define RS 9
+const byte DATA [] = {10, 11, 12, 13, A3, A4, A5, A6};
+
+
+bool clkState = false;
 
 void setup() {
+  // Init comm pins
+  pinMode(CLK, INPUT_PULLUP);
+  for(int pin = 0; pin < 8; pin++) {
+    pinMode(DATA[pin], INPUT);
+  }
+
+  // Init VGA
   vga.begin();
   vga.clear(11);
 }
 
 void loop() {
+  bool newClkState = digitalRead(CLK);
+  if (newClkState = false && clkState == true) {
+    // Falling edge: read data from bus
+    onClk();
+  }
+  clkState = newClkState;
+}
+
+void onClk() {
+  bool isCommand = digitalRead(RS);
+  if (isCommand) {
+    onCommandReceived();
+    onDataReceived();
+  }
+}
+
+void onCommandReceived() {
   
+}
+
+void onDataReceived() {
+  char ch = readByte();
+  vga.printSRAM((byte*)fnt_nanofont_data, FNT_NANOFONT_SYMBOLS_COUNT, FNT_NANOFONT_HEIGHT, 3, 1, ch, 0, 0, 1);
+}
+
+byte readByte() {
+  unsigned int data = 0;
+  for(int pin=0; pin < 8; pin++) {
+    byte b = digitalRead(DATA[pin]) ? 1 : 0;
+    data = (data << 1) + b;   // Shifta di 1 e aggiunge il bit corrente. Serve per ricostruire il numero da binario
+  }
+  return data;
 }
