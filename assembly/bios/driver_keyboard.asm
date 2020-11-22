@@ -23,6 +23,12 @@
 ; KEYB_A3_REG = 0000011
 ; etc...
 
+; Keyboard config (IO port 1)
+KEYB_A0_REG: EQU IO_1 + %00000001
+KEYB_A1_REG: EQU IO_1 + %00000010
+KEYB_A2_REG: EQU IO_1 + %00000100
+KEYB_A3_REG: EQU IO_1 + %00001000
+KEYB_A4_REG: EQU IO_1 + %00010000
 
 ; Reads the keyboard
 ; @return: a 0-terminated array of keycodes representing the pressed keys

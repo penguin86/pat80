@@ -35,16 +35,6 @@ IO_5: EQU 0xA0
 IO_6: EQU 0xC0
 IO_7: EQU 0xE0
 
-; LCD config (IO port 0)
-LCD_INSTR_REG: EQU IO_0
-LCD_DATA_REG: EQU IO_0 + 1
-
-; Keyboard config (IO port 1)
-KEYB_A0_REG: EQU IO_1 + %00000001
-KEYB_A1_REG: EQU IO_1 + %00000010
-KEYB_A2_REG: EQU IO_1 + %00000100
-KEYB_A3_REG: EQU IO_1 + %00001000
-KEYB_A4_REG: EQU IO_1 + %00010000
 
 
 ; CONSTANTS
@@ -55,8 +45,9 @@ SYSINIT_GREETING:
 
 
 
-include 'driver_hd44780.asm'
+;include 'driver_hd44780.asm'
 ;include 'driver_keyboard.asm'
+include 'driver_arduino_terminal.asm'
 
 ; System initialization
 Sysinit:
