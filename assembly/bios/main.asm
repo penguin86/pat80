@@ -49,30 +49,41 @@ KEYB_A4_REG: EQU IO_1 + %00010000
 
 ; CONSTANTS
 SYSINIT_GREETING:
-    DB "Pat80",0  ; null terminated string
+    DB "Pat80",10,0  ; null terminated string
 
 
 
 
 
 include 'driver_hd44780.asm'
-include 'driver_keyboard.asm'
+;include 'driver_keyboard.asm'
 
 ; System initialization
 Sysinit:
-    call Lcd_init
+    ;call Lcd_init
 
     ; position to line 2 char 3
     ;ld b, 1
     ;ld c, 1
     ;call Lcd_locate
-    
+
+    ; I/O TEST
+     
     ; write characters to display
     ld bc, SYSINIT_GREETING
     call Lcd_print      ; write string to screen
+    _io_test_loop:   
+        in a, (IO_0)    ; legge dal terminale
+        cp 0
+        jp z, _io_test_loop
+        ;sub a, 32   ; trasforma in maiuscola (ascii - 32) 
+        out (IO_0), a   ; scrive la lettera trasformata        
+    jp _io_test_loop
+
+    halt
 
     ; poll keyboard
-    _poll_keyb:
-    call Keyb_read
-    jp _poll_keyb
+    ;_poll_keyb:
+    ;call Keyb_read
+    ;jp _poll_keyb
 
