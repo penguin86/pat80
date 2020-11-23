@@ -49,6 +49,33 @@ SYSINIT_GREETING:
 ;include 'driver_keyboard.asm'
 include 'driver_arduino_terminal.asm'
 
+; SYSTEM CALLS
+; User I/O
+
+; Prints string
+; @param BC Pointer to a null-terminated string first character
+Print:
+    call Term_print
+    ret
+
+; Writes a single character
+; @param A Value of character to print
+Printc:
+    call Term_printc
+    ret
+
+; Reads a single character
+; @return A The read character
+Readc:
+    call Term_readc
+    ret
+
+; Reads a line
+; @return BC The pointer to a null-terminated read string
+Readline:
+    call Term_readline
+    ret
+
 ; System initialization
 Sysinit:
     ;call Lcd_init

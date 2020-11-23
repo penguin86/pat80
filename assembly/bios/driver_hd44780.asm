@@ -9,7 +9,8 @@ LCD_DATA_REG: EQU IO_0 + 1
 LCD_LINES_LEFT: DB 0x80, 0xA8, 0x94, 0xBC  ;array defining lcd command codes for the first char of every line
 
 ; variables
-lcd_cur_x: EQU DRV_VAR_SPACE
+LCD_VAR_SPACE: EQU DRV_VAR_SPACE
+lcd_cur_x: EQU LCD_VAR_SPACE
 lcd_cur_y: EQU lcd_cur_x + 1
 
 ; functions
