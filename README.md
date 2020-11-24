@@ -37,6 +37,9 @@ Passarne il puntatore ad una funzione:
 ld bc, myVar
 call lcd_print
 ```
+### Segmentation fault
+Controllare che non si stia puntando ad un registro con le parentesi:
+`ld (ix), a`
 
 # C
 ## Deploy

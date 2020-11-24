@@ -5,8 +5,8 @@
 DATA_REG: EQU IO_0
 
 ; variables
-LCD_VAR_SPACE: EQU DRV_VAR_SPACE + 128
-incoming_string: EQU LCD_VAR_SPACE
+TERM_VAR_SPACE: EQU DRV_VAR_SPACE + 128
+incoming_string: EQU TERM_VAR_SPACE
 
 ; functions
 
@@ -29,29 +29,29 @@ Term_printc:
 ; Reads a single character
 ; @return A The read character
 Term_readc:
-    in a, (IO_0)    ; reads a character
-    cp 0
-    jp z, Term_readline     ; if NULL, ignores it and waits for another character
+    in a, (DATA_REG)    ; reads a character
+    add a, 0
+    jp z, Term_readc     ; if char is 0 (NULL), ignores it and waits for another character
     ret ; if not NULL, returns it in the a register
 
 ; Reads a line
 ; @return BC The pointer to a null-terminated read string
 Term_readline:
-    ld ix, incoming_string  ; this array will contain read string
-    in a, (IO_0)    ; reads a character
+    ld bc, incoming_string  ; this array will contain read string
+    in a, (DATA_REG)    ; reads a character
     ; if char is 0 (ascii NULL), ignore it
-    cp 0
+    add a, 0
     jp z, Term_readline     ; if 0 (= ascii NULL), ignores it and waits for another character
-    ; if char is a newline (CR or LF), line is finished. 
+    ; if char is a newline (CR or LF), line is finished.
     cp 10 ; CR
     jp z, term_readline_foundcr ; Found newline. Jump to term_readline_foundcr
     cp 13 ; LF
     jp z, term_readline_foundcr ; Found newline. Jump to term_readline_foundcr
     ; At this point the read character is a valid ascii character
-    ld (ix), a ; adds char to the read string
-    inc ix  ; point to next array position
+    ld (bc), a ; adds char to the read string
+    inc bc  ; point to next array position
     jp Term_readline
     term_readline_foundcr:   ; called when carriage return was found (end of line)
-    ld (ix), 0 ; Null-terminate string
-    ld bc, incoming_string  ; Returns read string
+    ld (bc), 0 ; Null-terminate string
+    ld bc, incoming_string  ; Returns read string pointer
     ret

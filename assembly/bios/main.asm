@@ -2,7 +2,7 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 
 ; Pat80 BIOS v0.01
 ; @author: Daniele Verducci
-; 
+;
 ; MEMORY MAP
 ;   ROM is at 0x0000
 ;   RAM is at 0x8000
@@ -78,30 +78,23 @@ Readline:
 
 ; System initialization
 Sysinit:
-    ;call Lcd_init
-
-    ; position to line 2 char 3
-    ;ld b, 1
-    ;ld c, 1
-    ;call Lcd_locate
-
-    ; I/O TEST
-     
-    ; write characters to display
     ld bc, SYSINIT_GREETING
-    call Lcd_print      ; write string to screen
-    _io_test_loop:   
-        in a, (IO_0)    ; legge dal terminale
-        cp 0
-        jp z, _io_test_loop
-        ;sub a, 32   ; trasforma in maiuscola (ascii - 32) 
-        out (IO_0), a   ; scrive la lettera trasformata        
+    call Print
+   
+    _io_test_loop:
+        call Readline
+        call Print
+
+        ; call Printc
+        ; call Readline
+        ; ld a, (bc)
+        ; cp a, 0
+        ; jp z, _io_test_loop
+        ; ld (APP_VAR_SPACE), bc
+        ; ld bc, SAYS
+        ; call Print
+        ; ld bc, (APP_VAR_SPACE)
+        ; call Print
     jp _io_test_loop
 
-    halt
-
-    ; poll keyboard
-    ;_poll_keyb:
-    ;call Keyb_read
-    ;jp _poll_keyb
 

@@ -1,5 +1,11 @@
 ; HD44780 20x4 characters LCD display driver
 ; @author Daniele Verducci
+;
+; USAGE:
+; STR: DB "Hello world!",0          <-- null terminated string
+; call Lcd_init                     <-- inits hd44780 controller
+; ld bc, STR                        <-- load pointer to string's first char in reg BC
+; call Lcd_print                    <-- this function will print the string
 
 ; LCD config (IO port 0)
 LCD_INSTR_REG: EQU IO_0
