@@ -5,8 +5,9 @@
 ;   H (HELP) Shows available commands
 ;   D (DUMP) $pos Dumps first 100 bytes of memory starting at $pos
 ;   S (SET) $pos $val Replaces byte at $pos with $val
-;   L (LOAD) $pos $val Loads all the incoming bytes in memory starting from $pos. Ends when "0" is received 8 times.
+;   L (LOAD) $pos $val 
 ;   R (RUN) $pos Starts executing code from $pos
+;   I (IMMEDIATE) Loads all the incoming bytes in application memory starting from $pos. When "0" is received 8 times starts executing the loaded code.
 ; The commands are entered with a single letter and the program completes the command
 
 include 'libs/strings.asm'
@@ -19,8 +20,10 @@ MON_COMMAND_DUMP: DB "DUMP",0
 MON_COMMAND_SET: DB "SET",0
 MON_COMMAND_LOAD: DB "LOAD",0
 MON_COMMAND_RUN: DB "RUN",0
+MON_COMMAND_IMMEDIATE: DB "IMMEDIATE",0
 MON_ARG_HEX: DB "    0x",0
 MON_HELP: DB 10,"Available commands: HELP, DUMP, SET, LOAD, RUN",0
+MON_MSG_IMMEDIATE: DB 10,"Waiting for data. 00000000 to execute.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 
 Monitor_main:
@@ -54,6 +57,9 @@ Monitor_main:
         ld hl, MON_COMMAND_RUN
         cp (hl)
         jp z, monitor_run
+        ld hl, MON_COMMAND_IMMEDIATE
+        cp (hl)
+        jp z, monitor_immediate
         ; Unrecognized command: print error
         ld bc, MON_ERR_SYNTAX
         call Print
@@ -86,7 +92,21 @@ monitor_load:
 monitor_run:
     ld bc, MON_COMMAND_RUN + 1 ; autocomplete command
     call Print
-    jp APP_VAR_SPACE    ; Start executing code
+    jp APP_SPACE    ; Start executing code
+    jp monitor_main_loop
+
+monitor_immediate:
+    ld bc, MON_COMMAND_IMMEDIATE + 1 ; autocomplete command
+    call Print
+    ; start copying incoming data to application space
+    monitor_immediate_copyToAppSpace:
+    ld bc, APP_SPACE
+    call Readc
+    ld (bc), a
+    cp a, 0
+    jmp z monitor_immediate_copyToAppSpace  ; così esce al primo 0 che trova, ovviamente invece vogliamo aspettare 8 zeri
+
+    jp APP_SPACE    ; Start executing code
     jp monitor_main_loop
 
 monitor_arg_byte:
