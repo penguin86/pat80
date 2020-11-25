@@ -52,6 +52,6 @@ Term_readline:
     inc bc  ; point to next array position
     jp Term_readline
     term_readline_foundcr:   ; called when carriage return was found (end of line)
-    ld (bc), 0 ; Null-terminate string
+    ;ld (bc), 0 ; Null-terminate string
     ld bc, incoming_string  ; Returns read string pointer
     ret

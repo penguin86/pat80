@@ -37,17 +37,12 @@ IO_7: EQU 0xE0
 
 
 
-; CONSTANTS
-SYSINIT_GREETING:
-    DB "Pat80",10,0  ; null terminated string
 
 
 
-
-
-;include 'driver_hd44780.asm'
-;include 'driver_keyboard.asm'
-include 'driver_arduino_terminal.asm'
+;include 'drivers/hd44780.asm'
+;include 'drivers/keyboard.asm'
+include 'drivers/arduino_terminal.asm'
 include 'monitor.asm'
 
 ; SYSTEM CALLS
@@ -79,23 +74,6 @@ Readline:
 
 ; System initialization
 Sysinit:
-    ld bc, SYSINIT_GREETING
-    call Print
-   
-    _io_test_loop:
-        call Readline
-        call Print
-
-        ; call Printc
-        ; call Readline
-        ; ld a, (bc)
-        ; cp a, 0
-        ; jp z, _io_test_loop
-        ; ld (APP_VAR_SPACE), bc
-        ; ld bc, SAYS
-        ; call Print
-        ; ld bc, (APP_VAR_SPACE)
-        ; call Print
-    jp _io_test_loop
-
-
+    ; Start Monitor
+    call Monitor_main
+    halt
