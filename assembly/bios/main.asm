@@ -48,6 +48,7 @@ SYSINIT_GREETING:
 ;include 'driver_hd44780.asm'
 ;include 'driver_keyboard.asm'
 include 'driver_arduino_terminal.asm'
+include 'monitor.asm'
 
 ; SYSTEM CALLS
 ; User I/O
