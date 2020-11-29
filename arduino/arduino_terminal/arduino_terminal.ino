@@ -39,13 +39,12 @@ void loop() {
 }
 
 void onClk() {
-  if (PINB & B00000100 == B00000100) { // If EN is HIGH (clock pulse finished)
-    // Clock pulse finished, return to high impedance state
-    DDRD = B00000010;
-    DDRB = B00000000;
-  } else {
+  // In any case, return to high impedance state
+  DDRD = B00000010;
+  DDRB = B00000000;
+  if (PIND & B00000100 == B00000000) {
      // EN is LOW: Clock pulse started
-    if (PIND & B00001000 == B00001000) {  // WR is HIGH (Pat80 wants to Read (we send data))
+    if (PINB & B00001000 == B00001000) {  // WR is HIGH (Pat80 wants to Read (we send data))
       DDRD = DDRD | B11111000; // Port D (arduino pins 3 to 7) is output. In or to preserve serial pins and interrupt pin
       DDRB = B00000111; // Port B (0,1,2) = pins 8,9,10 output
       // Split byte to two parts
