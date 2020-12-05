@@ -42,38 +42,46 @@ IO_7: EQU 0xE0
 
 ;include 'drivers/hd44780.asm'
 ;include 'drivers/keyboard.asm'
-include 'drivers/arduino_terminal.asm'
-include 'monitor.asm'
+;include 'drivers/arduino_terminal.asm'
+include 'drivers/sn76489.asm'
+;include 'monitor.asm'
+include 'libs/time.asm'
+
 
 ; SYSTEM CALLS
 ; User I/O
 
-; Prints string
-; @param BC Pointer to a null-terminated string first character
-Print:
-    call Term_print
-    ret
+; ; Prints string
+; ; @param BC Pointer to a null-terminated string first character
+; Print:
+;     call Term_print
+;     ret
 
-; Writes a single character
-; @param A Value of character to print
-Printc:
-    call Term_printc
-    ret
+; ; Writes a single character
+; ; @param A Value of character to print
+; Printc:
+;     call Term_printc
+;     ret
 
-; Reads a single character
-; @return A The read character
-Readc:
-    call Term_readc
-    ret
+; ; Reads a single character
+; ; @return A The read character
+; Readc:
+;     call Term_readc
+;     ret
 
-; Reads a line
-; @return BC The pointer to a null-terminated read string
-Readline:
-    call Term_readline
-    ret
+; ; Reads a line
+; ; @return BC The pointer to a null-terminated read string
+; Readline:
+;     call Term_readline
+;     ret
 
 ; System initialization
 Sysinit:
     ; Start Monitor
-    call Monitor_main
+    ;call Monitor_main
+
+    call Snd_init
+    ld bc, 10
+    call Time_delay55
+    call Snd_beep
     halt

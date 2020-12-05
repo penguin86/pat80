@@ -16,7 +16,7 @@ void setup() {
   pinMode(WE, OUTPUT);
   digitalWrite(WE, HIGH);
 
-  /*  Init device (silence all channels)  
+  /*  Init device (silence all channels)
    *  Bits meaning:
    *  1 R0 R1 R2 A0 A1 A2 A3
    *    Bit0 is 1
@@ -32,7 +32,7 @@ void setup() {
 
   // Channel 1 to max volume
   SendByte(B10010000);
-  
+
   /*  Play note on channel 1
    *  Requires sending 2 bytes.
    *  Bits meaning:
@@ -50,7 +50,7 @@ void setup() {
    SendByte(B10000000); SendByte(B00001000);
    delay(500);
 
-   SendByte(B10011111);    // Sil ch 1 
+   SendByte(B10011111);    // Sil ch 1
 
    delay(1000);
 
@@ -65,7 +65,7 @@ void setup() {
    SendByte(B11000000); SendByte(B00001000);  // Note on ch3
    delay(500);
 
-   SendByte(B10011111);    // Sil ch 1 
+   SendByte(B10011111);    // Sil ch 1
    SendByte(B10111111);    // Sil ch 2
    SendByte(B11011111);    // Sil ch 3
 
@@ -73,13 +73,10 @@ void setup() {
    /*
     * Play noise on channel 4
     */
-  
-  
+
 }
 
-void loop() {
-  
-}
+void loop() {}
 
 void SendByte(byte b) {
   digitalWrite(DATA_BUS[0], (b&1)?HIGH:LOW);
