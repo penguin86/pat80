@@ -5,19 +5,20 @@
  * The Arduino IDE serial monitor is used to send and receive commands to the Z80.
  */
 
-// EN 2   // Active low
-// WR 11   // Active low
-// DATA BUS IS: 3, 4, 5, 6, 7, 8, 9, 10;
+// EN 2   // Input, Active low
+// WR 11   // Input, Active low
+// DATA BUS (Input/Output, active high): 3, 4, 5, 6, 7, 8, 9, 10;
 
 byte incomingBuffer = 0;  // Incoming from computer, to the Pat80
 byte outgoingBuffer = 0;  // Outgoing to computer, from the Pat80
 
-void setup() {
-  Serial.begin(2000000);
-  Serial.println("Pat80 terminal");
-  
+void setup() {  
   DDRD = B00000010; // Port D (used arduino pins 2 (EN) and 3 to 7 (DATA)) is input. Avoid changing serial pins.
   DDRB = B00000000; // Port B (used arduino pins 8 to 10 (DATA) and 11 (WR)) is input
+  
+  Serial.begin(2000000);
+  Serial.println("Pat80 terminal");
+
   attachInterrupt(digitalPinToInterrupt(2), onClk, CHANGE);
 }
 
@@ -35,6 +36,7 @@ void loop() {
       Serial.print(outgoingBuffer, HEX);
       Serial.print("]");
     }
+    outgoingBuffer = 0;
   }
 }
 
@@ -42,14 +44,15 @@ void onClk() {
   // In any case, return to high impedance state
   DDRD = B00000010;
   DDRB = B00000000;
-  if (PIND & B00000100 == B00000000) {
+  if ((PIND & B00000100) == 0) {
      // EN is LOW: Clock pulse started
-    if (PINB & B00001000 == B00001000) {  // WR is HIGH (Pat80 wants to Read (we send data))
+    if ((PINB & B00001000) == B00001000) {  // WR is HIGH (Pat80 wants to Read (we send data))
       DDRD = DDRD | B11111000; // Port D (arduino pins 3 to 7) is output. In or to preserve serial pins and interrupt pin
       DDRB = B00000111; // Port B (0,1,2) = pins 8,9,10 output
       // Split byte to two parts
       PORTD = incomingBuffer << 3;
       PORTB = incomingBuffer >> 5;
+      incomingBuffer = 0;
     } else {
       // Pat80 wants to Write (we receive data)
       outgoingBuffer = (PIND >> 3) | (PINB << 5); // Compose the final byte from the two parts

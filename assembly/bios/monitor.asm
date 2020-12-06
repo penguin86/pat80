@@ -5,7 +5,7 @@
 ;   H (HELP) Shows available commands
 ;   D (DUMP) $pos Dumps first 100 bytes of memory starting at $pos
 ;   S (SET) $pos $val Replaces byte at $pos with $val
-;   L (LOAD) $pos $val 
+;   L (LOAD) $pos $val
 ;   R (RUN) $pos Starts executing code from $pos
 ;   I (IMMEDIATE) Loads all the incoming bytes in application memory starting from $pos. When "0" is received 8 times starts executing the loaded code.
 ; The commands are entered with a single letter and the program completes the command
@@ -60,9 +60,10 @@ Monitor_main:
         ld hl, MON_COMMAND_IMMEDIATE
         cp (hl)
         jp z, monitor_immediate
-        ; Unrecognized command: print error
+        ; Unrecognized command: print error and beep
         ld bc, MON_ERR_SYNTAX
         call Print
+        call Beep
     jp monitor_main_loop
 
 monitor_help:
@@ -104,7 +105,7 @@ monitor_immediate:
     call Readc
     ld (bc), a
     cp a, 0
-    jmp z monitor_immediate_copyToAppSpace  ; così esce al primo 0 che trova, ovviamente invece vogliamo aspettare 8 zeri
+    ;jmp z monitor_immediate_copyToAppSpace  ; così esce al primo 0 che trova, ovviamente invece vogliamo aspettare 8 zeri
 
     jp APP_SPACE    ; Start executing code
     jp monitor_main_loop

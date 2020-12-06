@@ -5,11 +5,8 @@
 ; call Snd_init                     <-- inits sound (and silences default tone)
 ; call Snd_beep                     <-- system beep
 
-; Sound card is on port 0
-SND_DATA_REG: EQU IO_0
-
-; Settings
-SND_BEEP_DURATION: EQU 1000  ; in cpu cycles
+; Sound card is on port 1
+SND_DATA_REG: EQU IO_1
 
 ; Init device (silence all channels)
 ; Bits meaning:
@@ -42,8 +39,8 @@ Snd_beep:
     out (SND_DATA_REG),a
     ld a,%00001000
     out (SND_DATA_REG),a
-    ; wait 1 sec
-    ld bc, 10
+    ; wait
+    ld bc, (TIME_DUR_MILLIS * 150)
     call Time_delay55
     ; silence ch1
     ld a,%10011111
