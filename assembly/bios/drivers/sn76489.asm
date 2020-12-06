@@ -8,6 +8,9 @@
 ; Sound card is on port 0
 SND_DATA_REG: EQU IO_0
 
+; Settings
+SND_BEEP_DURATION: EQU 1000  ; in cpu cycles
+
 ; Init device (silence all channels)
 ; Bits meaning:
 ; 1 R0 R1 R2 A0 A1 A2 A3
@@ -16,22 +19,20 @@ SND_DATA_REG: EQU IO_0
 ;   Bit4,5,6,7 selecy the attenuation (0000=full volume, 1111=silent)
 Snd_init:
     ; silence ch1
-    ld a,%11111001
-    ;ld a,%10011111
+    ld a,%10011111
     out (SND_DATA_REG),a
     ; silence ch2
-     ld a,%11111101
-    ;ld a,%10111111
+    ld a,%10111111
     out (SND_DATA_REG),a
     ; silence ch3
-     ld a,%11111011
-    ;ld a,%11011111
+    ld a,%11011111
     out (SND_DATA_REG),a
     ; silence noise ch
     ld a,%11111111
     out (SND_DATA_REG),a
     ret
 
+; Plays the system beep.
 Snd_beep:
     ; ch1 max volume
     ld a,%10010000
@@ -48,3 +49,10 @@ Snd_beep:
     ld a,%10011111
     out (SND_DATA_REG),a
     ret
+
+; Sets the attenuation value for a channel
+; @param a Channel (0, 1, 2, 3(Noise))
+; @param c Attenuation (0 to 16)
+; Snd_setAtt:
+;     cp a, 0
+    
