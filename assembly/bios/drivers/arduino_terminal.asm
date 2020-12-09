@@ -26,7 +26,7 @@ Term_printc:
     out (TERM_DATA_REG),a
     ret
 
-; Reads a single character
+; Reads a single character. 0s are ignored (can be used with keyboard)
 ; @return A The read character
 Term_readc:
     in a, (TERM_DATA_REG)    ; reads a character
@@ -34,7 +34,7 @@ Term_readc:
     jp z, Term_readc     ; if char is 0 (NULL), ignores it and waits for another character
     ret ; if not NULL, returns it in the a register
 
-; Reads a line
+; Reads a line. 0s are ignored (can be used with keyboard)
 ; @return BC The pointer to a null-terminated read string
 Term_readline:
     ld bc, incoming_string  ; this array will contain read string
@@ -54,4 +54,11 @@ Term_readline:
     term_readline_foundcr:   ; called when carriage return was found (end of line)
     ;ld (bc), 0 ; Null-terminate string
     ld bc, incoming_string  ; Returns read string pointer
+    ret
+
+; Reads the byte currently on the I/O bus at the provided address.
+; 0s are not ignored (cannot be used with keyboard)
+; Affects NO condition bits!
+Term_readb:
+    in a, (TERM_DATA_REG)    ; reads a byte
     ret

@@ -100,16 +100,11 @@ monitor_immediate:
     ld bc, MON_COMMAND_IMMEDIATE + 1 ; autocomplete command
     call Print
     ; start copying incoming data to application space
-    monitor_immediate_copyToAppSpace:
-    ld bc, APP_SPACE
-    call Readc
-    ld (bc), a
-    cp a, 0
-    ;jmp z monitor_immediate_copyToAppSpace  ; così esce al primo 0 che trova, ovviamente invece vogliamo aspettare 8 zeri
-
+    call monitor_copyTermToAppMem
     jp APP_SPACE    ; Start executing code
-    jp monitor_main_loop
+    ;jp monitor_main_loop
 
+; Read 1 hex byte (e.g. 0x8C)
 monitor_arg_byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
@@ -119,6 +114,7 @@ monitor_arg_byte:
     call monitor_readHexDigit
     ret
 
+; Reads 2 hex bytes (e.g. 0x3F09)
 monitor_arg_2byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
@@ -130,6 +126,7 @@ monitor_arg_2byte:
     call monitor_readHexDigit
     ret
 
+; Reads an hex digit (0 to 9, A to F)
 monitor_readHexDigit:
     call Readc
     ; check if is a valid hex digit (0-9 -> ascii codes 48 to 57; A-F -> ascii codes 65 to 70)
@@ -161,5 +158,24 @@ monitor_readHexDigit:
     ; Its numeric value is 10 (A) to 15 (F). To obtain this, subtract 55.
     sub a, 55
     ret
+
+; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
+; 0s are not ignored and the sequence is complete when found 8 zeros.
+monitor_copyTermToAppMem:
+    call Term_readb
+    cp 0
+    jp z, monitor_copyTermToAppMem     ; wait for data stream to begin: ignore leading zeros
+    ld hl, APP_SPACE    ; we will write in APP_SPACE
+    ld b, 8     ; the number of zeros that represent the end of stream
+    monitor_copyTermToAppMem_loop:
+    ld (hl), a  ; copy byte to memory
+    inc hl  ; move to next memory position
+    cp 0    ; compare A to 0
+    ; load next byte to A (this doesn't affect condition bits, so flag Z from previous cp is still valid)
+    call Term_readb
+    jp nz, monitor_copyTermToAppMem_loop   ; if during previous cp A was not 0, execute next cycle
+    dec b   ; if A is 0, decrement "end of stream" counter
+    ret z   ; if B is 0, we found 8 zeros, so the stream is finished: return.
+    jp monitor_copyTermToAppMem_loop   ; otherwise, continue loop
 
 
