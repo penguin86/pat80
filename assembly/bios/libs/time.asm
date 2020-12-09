@@ -2,7 +2,7 @@
 ; @author Daniele Verducci
 
 ; Duration in cpu cycles / 55 (change these values based on CPU frequency)
-TIME_DUR_SECOND: EQU (2545)
+TIME_DUR_SECOND: EQU 2545
 TIME_DUR_MILLIS: EQU 3
 
 ; Wait bc * 55 states
