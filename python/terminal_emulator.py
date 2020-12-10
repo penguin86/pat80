@@ -24,37 +24,29 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import serial
+import curses
 import time
 
 class TerminalEmulator:
-    def __init__(self, port, baudRate, fileName):
-        ser = serial.Serial(port, baudRate)
-        print "Serial port {} opened with baudrate {}".format(port, str(baudRate))
-
-        ser.write(73)
+    def __init__(self, port, baudRate, w):
+        w.clear()
+        ser = serial.Serial(port, baudRate, timeout=0)
+        i = 20
         while True:
-            x = ser.read()
-            print(x)
-        time.sleep(1)
-        ser.write(b'v')
+            '''try:
+                # read key and write to serial port
+                key = w.getkey()
+                ser.write(key)   
+            except Exception as e:
+                # No input   
+                pass'''
+            # read serial port and write to curses
+            if ser.inWaiting():
+                b = ser.read()
+                w.addch(chr(b))
+                #print(chr(b), end="")
 
-        # Open z80 bin file
-        '''
-        with open(fileName, "rb") as f:
-            print "Sending command IMMEDIATE"
-            ser.write(b'I')
-            time.sleep(1)
-            print "Sending file {}".format(fileName)
-            byte = f.read(1)
-            while byte:
-                print(byte)
-                ser.write(byte)
-                byte = f.read(1)
-            f.close()
-
-        ser.close()
-        print "Completed"
-        '''
+        
 
 if __name__ == '__main__':
     import argparse
@@ -64,4 +56,18 @@ if __name__ == '__main__':
     parser.add_argument('baudrate', help="arduino parallel monitor USB baudrate")
     args = parser.parse_args()
 
-    td = TerminalEmulator(args.port, args.baudrate, args.file)
+    # Init curses
+    stdscr = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+
+    try:
+        td = TerminalEmulator(args.port, args.baudrate, stdscr)
+    except Exception as e:
+        print(e)
+    finally:
+        # Stop curses
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
+
