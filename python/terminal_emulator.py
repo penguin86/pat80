@@ -32,13 +32,15 @@ class TerminalEmulator:
         w.clear()
         w.move(0,0)
         while True:
-            '''try:
+            try:
                 # read key and write to serial port
-                key = w.getkey()
-                ser.write(key)   
+                key = w.get_wch()   # TODO: Mettere no delay mode
+                if key == 10 or (key > 31 and key < 256):
+                    # Is a character
+                    ser.write(key)
             except Exception as e:
                 # No input   
-                pass'''            
+                pass         
 
             # read serial port and write to curses
             if ser.inWaiting():
