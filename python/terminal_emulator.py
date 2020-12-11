@@ -43,7 +43,7 @@ class TerminalEmulator:
             # read serial port and write to curses
             if ser.inWaiting():
                 b = ser.read(1)
-                if ord(b) > 31:
+                if ord(b) > 31 or ord(b) == 10:
                     w.addch(b)
 
             stdscr.refresh()
