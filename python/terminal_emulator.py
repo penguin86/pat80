@@ -28,10 +28,9 @@ import curses
 import time
 
 class TerminalEmulator:
-    def __init__(self, port, baudRate, w):
+    def __init__(self, w, ser):
         w.clear()
-        ser = serial.Serial(port, baudRate, timeout=0)
-        i = 20
+        w.move(0,0)
         while True:
             '''try:
                 # read key and write to serial port
@@ -39,12 +38,15 @@ class TerminalEmulator:
                 ser.write(key)   
             except Exception as e:
                 # No input   
-                pass'''
+                pass'''            
+
             # read serial port and write to curses
             if ser.inWaiting():
-                b = ser.read()
-                w.addch(chr(b))
-                #print(chr(b), end="")
+                b = ser.read(1)
+                if ord(b) > 31:
+                    w.addch(b)
+
+            stdscr.refresh()
 
         
 
@@ -60,12 +62,17 @@ if __name__ == '__main__':
     stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
+    stdscr.idlok(True)
+    stdscr.scrollok(True)
 
     try:
-        td = TerminalEmulator(args.port, args.baudrate, stdscr)
+        ser = serial.Serial(args.port, args.baudrate, timeout=0)
+        td = TerminalEmulator(stdscr, ser)           
     except Exception as e:
         print(e)
     finally:
+        # Close serial
+        ser.close()
         # Stop curses
         curses.nocbreak()
         curses.echo()
