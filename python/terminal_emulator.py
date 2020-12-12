@@ -26,21 +26,21 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 import serial
 import curses
 import time
+import textwrap
+
 
 class TerminalEmulator:
     def __init__(self, w, ser):
         w.clear()
         w.move(0,0)
         while True:
-            try:
-                # read key and write to serial port
-                key = w.get_wch()   # TODO: Mettere no delay mode
-                if key == 10 or (key > 31 and key < 256):
-                    # Is a character
-                    ser.write(key)
-            except Exception as e:
-                # No input   
-                pass         
+            # read key and write to serial port
+            key = w.getch()
+            if key == 10 or (key > 31 and key < 256):
+                # Is a character
+                ser.write(key)
+            elif int(key) == 1:     # CTRL+A, enter ADB mode
+                self.adbMode(w, ser)
 
             # read serial port and write to curses
             if ser.inWaiting():
@@ -48,14 +48,47 @@ class TerminalEmulator:
                 if ord(b) > 31 or ord(b) == 10:
                     w.addch(b)
 
-            stdscr.refresh()
+            w.refresh()
+    
+    def adbMode(self, w, ser):
+        stdscr.nodelay(False)
+        curses.echo()
+
+        # Clear first line
+        w.move(0,0)
+        w.clrtoeol()
+        # Ask for file path
+        w.addstr(0, 0, '[ADB MODE] file to load:', curses.A_REVERSE)
+        path = w.getstr()
+        try:
+            with open(path, "rb") as f:
+                byte = f.read(1)
+                while byte:
+                    ser.write(byte)
+                    byte = f.read(1)
+        except IOError as e:
+            w.move(0,0)
+            w.clrtoeol()
+            w.addstr(" {}".format(str(e)), curses.A_REVERSE)
+            w.refresh()
+        
+        curses.noecho()
+        stdscr.nodelay(True)
+                
 
         
 
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=textwrap.dedent('''\
+            Pat80 Terminal Emulator with ADB (Assembly Deploy Bridge) support.
+            CTRL+C Exits
+            CTRL+A ADB mode: sends binary file
+        ''')
+    )
     parser.add_argument('port', help="arduino parallel monitor USB port")
     parser.add_argument('baudrate', help="arduino parallel monitor USB baudrate")
     args = parser.parse_args()
@@ -66,12 +99,19 @@ if __name__ == '__main__':
     curses.cbreak()
     stdscr.idlok(True)
     stdscr.scrollok(True)
+    stdscr.nodelay(True)
 
+    exitMessage = None
+    exitSuccess = True
     try:
         ser = serial.Serial(args.port, args.baudrate, timeout=0)
-        td = TerminalEmulator(stdscr, ser)           
+        td = TerminalEmulator(stdscr, ser)
+    except KeyboardInterrupt:
+        exitMessage = 'Bye!'
+        exitSuccess = True
     except Exception as e:
-        print(e)
+        exitMessage = str(e)
+        exitSuccess = False
     finally:
         # Close serial
         ser.close()
@@ -79,4 +119,7 @@ if __name__ == '__main__':
         curses.nocbreak()
         curses.echo()
         curses.endwin()
+        # Print exit message
+        print(exitMessage)
+        exit(0 if exitSuccess else 1)
 
