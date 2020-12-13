@@ -34,19 +34,20 @@ class TerminalEmulator:
         w.clear()
         w.move(0,0)
         while True:
-            # read key and write to serial port
-            key = w.getch()
-            if key == 10 or (key > 31 and key < 256):
-                # Is a character
-                ser.write(key)
-            elif int(key) == 1:     # CTRL+A, enter ADB mode
-                self.adbMode(w, ser)
-
             # read serial port and write to curses
             if ser.inWaiting():
                 b = ser.read(1)
                 if ord(b) > 31 or ord(b) == 10:
                     w.addch(b)
+            
+            # read key and write to serial port
+            key = w.getch()
+            if key == 10 or (key > 31 and key < 256):
+                # Is a character
+                ser.write(bytes([key]))
+            elif int(key) == 1:     # CTRL+A, enter ADB mode
+                self.adbMode(w, ser)
+
 
             w.refresh()
     
