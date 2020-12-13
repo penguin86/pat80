@@ -24,37 +24,33 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import serial
+import curses
 import time
 
 class TerminalEmulator:
-    def __init__(self, port, baudRate, fileName):
-        ser = serial.Serial(port, baudRate)
-        print "Serial port {} opened with baudrate {}".format(port, str(baudRate))
-
-        ser.write(73)
+    def __init__(self, w, ser):
+        w.clear()
+        w.move(0,0)
         while True:
-            x = ser.read()
-            print(x)
-        time.sleep(1)
-        ser.write(b'v')
+            try:
+                # read key and write to serial port
+                key = w.get_wch()   # TODO: Mettere no delay mode
+                if key == 10 or (key > 31 and key < 256):
+                    # Is a character
+                    ser.write(key)
+            except Exception as e:
+                # No input   
+                pass         
 
-        # Open z80 bin file
-        '''
-        with open(fileName, "rb") as f:
-            print "Sending command IMMEDIATE"
-            ser.write(b'I')
-            time.sleep(1)
-            print "Sending file {}".format(fileName)
-            byte = f.read(1)
-            while byte:
-                print(byte)
-                ser.write(byte)
-                byte = f.read(1)
-            f.close()
+            # read serial port and write to curses
+            if ser.inWaiting():
+                b = ser.read(1)
+                if ord(b) > 31 or ord(b) == 10:
+                    w.addch(b)
 
-        ser.close()
-        print "Completed"
-        '''
+            stdscr.refresh()
+
+        
 
 if __name__ == '__main__':
     import argparse
@@ -64,4 +60,23 @@ if __name__ == '__main__':
     parser.add_argument('baudrate', help="arduino parallel monitor USB baudrate")
     args = parser.parse_args()
 
-    td = TerminalEmulator(args.port, args.baudrate, args.file)
+    # Init curses
+    stdscr = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+    stdscr.idlok(True)
+    stdscr.scrollok(True)
+
+    try:
+        ser = serial.Serial(args.port, args.baudrate, timeout=0)
+        td = TerminalEmulator(stdscr, ser)           
+    except Exception as e:
+        print(e)
+    finally:
+        # Close serial
+        ser.close()
+        # Stop curses
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
+
