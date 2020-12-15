@@ -7,23 +7,23 @@
 ;   S (SET) $pos $val Replaces byte at $pos with $val
 ;   L (LOAD) $pos $val
 ;   R (RUN) $pos Starts executing code from $pos
-;   I (IMMEDIATE) Loads all the incoming bytes in application memory starting from $pos. When "0" is received 8 times starts executing the loaded code.
+;   A (ADB) Enters in Assembly Depoy Bridge mode: loads all the incoming bytes in application memory and starts executing.
 ; The commands are entered with a single letter and the program completes the command
 
 include 'libs/strings.asm'
 
 ; CONSTANTS
 ; All monitor commands are 3 chars long.
-MON_WELCOME: DB "PAT80 MEMORY MONITOR 0.1",10,0
+MON_WELCOME: DB "PAT80 MEMORY MONITOR 0.2",10,0
 MON_COMMAND_HELP: DB "HELP",0  ; null terminated strings
 MON_COMMAND_DUMP: DB "DUMP",0
 MON_COMMAND_SET: DB "SET",0
 MON_COMMAND_LOAD: DB "LOAD",0
 MON_COMMAND_RUN: DB "RUN",0
-MON_COMMAND_IMMEDIATE: DB "IMMEDIATE",0
+MON_COMMAND_ADB: DB "ADB",0
 MON_ARG_HEX: DB "    0x",0
-MON_HELP: DB 10,"Available commands: HELP, DUMP, SET, LOAD, RUN",0
-MON_MSG_IMMEDIATE: DB 10,"Waiting for data. 00000000 to execute.",0
+MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP shows memory content\nSET sets memory content LOAD\nRUN executes code\nADB starts Assembly Deploy Bridge",0
+MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 
 Monitor_main:
@@ -57,9 +57,9 @@ Monitor_main:
         ld hl, MON_COMMAND_RUN
         cp (hl)
         jp z, monitor_run
-        ld hl, MON_COMMAND_IMMEDIATE
+        ld hl, MON_COMMAND_ADB
         cp (hl)
-        jp z, monitor_immediate
+        jp z, monitor_adb
         ; Unrecognized command: print error and beep
         ld bc, MON_ERR_SYNTAX
         call Print
@@ -96,8 +96,8 @@ monitor_run:
     jp APP_SPACE    ; Start executing code
     jp monitor_main_loop
 
-monitor_immediate:
-    ld bc, MON_COMMAND_IMMEDIATE + 1 ; autocomplete command
+monitor_adb:
+    ld bc, MON_COMMAND_ADB + 1 ; autocomplete command
     call Print
     ; start copying incoming data to application space
     call monitor_copyTermToAppMem
