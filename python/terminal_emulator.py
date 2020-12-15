@@ -39,18 +39,22 @@ class TerminalEmulator:
                 b = ser.read(1)
                 if ord(b) > 31 or ord(b) == 10:
                     w.addch(b)
-            
+
             # read key and write to serial port
             key = w.getch()
             if key == 10 or (key > 31 and key < 256):
                 # Is a character
                 ser.write(bytes([key]))
             elif int(key) == 1:     # CTRL+A, enter ADB mode
+                # Save cursor position
+                (xPos, yPos) = w.getyx()
                 self.adbMode(w, ser)
+                # Restore cursor position
+                w.move(xPos, yPos)
 
 
             w.refresh()
-    
+
     def adbMode(self, w, ser):
         stdscr.nodelay(False)
         curses.echo()
@@ -72,11 +76,9 @@ class TerminalEmulator:
             w.clrtoeol()
             w.addstr(" {}".format(str(e)), curses.A_REVERSE)
             w.refresh()
-        
+
         curses.noecho()
         stdscr.nodelay(True)
-                
-
         
 
 if __name__ == '__main__':
