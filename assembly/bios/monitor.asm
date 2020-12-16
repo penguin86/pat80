@@ -78,7 +78,18 @@ monitor_help:
 monitor_dump:
     ld bc, MON_COMMAND_DUMP + 1 ; autocomplete command
     call Print
-    call monitor_arg_byte
+    call monitor_arg_2byte  ; returns the read bytes in hl
+    ld b, 64    ; the number of bytes to display
+    monitor_dump_show_bytes_loop:
+    ; print character at mem position
+    ld a, (hl)
+    call Printc
+    ; move to next mem position
+    inc hl
+    ; decrement counter: if non zero continue loop
+    dec b
+    jp nz, monitor_dump_show_bytes_loop
+    ; if counter 0, finished
     jp monitor_main_loop
 
 monitor_set:
@@ -107,29 +118,55 @@ monitor_adb:
     call Print
     jp monitor_main_loop
 
-; Read 1 hex byte (e.g. 0x8C)
+; Prints "0x" and read 1 hex byte (2 hex digits, e.g. 0x8C)
+; @return a the read byte
+; @uses a, b, c
 monitor_arg_byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
     call Print
-    ; Receive two hex digits
-    call monitor_readHexDigit
-    call monitor_readHexDigit
+    ; Read 2 digits
+    call monitor_arg_byte_impl
     ret
 
-; Reads 2 hex bytes (e.g. 0x3F09)
+; Prints "0x" and reads 2 hex bytes (4 hex digits e.g. 0x3F09)
+; @return hl the two read bytes
+; @uses a, b, c, h, l
 monitor_arg_2byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
     call Print
-    ; Receive four hex digits
+    ; Read 2 digits
+    call monitor_arg_byte_impl
+    ld h, a ; move result to h
+    ; Read 2 digits
+    call monitor_arg_byte_impl
+    ld l, a ; move result to l
+    ret
+
+; Read 2 hex digits
+; @return a the read byte
+; @uses a, b, c
+monitor_arg_byte_impl:
+    ; Receive first hex digit
     call monitor_readHexDigit
+    ; First hex digit is the most signif nibble, so shift left by 4 bits
+    sla a
+    sla a
+    sla a
+    sla a
+    ld c, a     ; save shifted nibble in c
+    ; Read second hex digit
     call monitor_readHexDigit
-    call monitor_readHexDigit
-    call monitor_readHexDigit
+    ; Join the two nibbles in a single byte: second digit is already in a,
+    ; so we OR with the previously shifted c and obtain the complete byte in a.
+    or c
+    ld a, c ; store c in a for return
     ret
 
 ; Reads an hex digit (0 to 9, A to F)
+; @return a the read nibble
+; @uses a, b
 monitor_readHexDigit:
     call Readc
     ; check if is a valid hex digit (0-9 -> ascii codes 48 to 57; A-F -> ascii codes 65 to 70)
