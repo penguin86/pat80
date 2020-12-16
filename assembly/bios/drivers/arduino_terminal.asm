@@ -3,6 +3,7 @@
 
 ; config (IO port 0)
 TERM_DATA_REG: EQU IO_0
+TERM_DATA_AVAIL_REG: EQU IO_0 + 1
 
 ; variables
 TERM_VAR_SPACE: EQU DRV_VAR_SPACE + 128
@@ -26,7 +27,9 @@ Term_printc:
     out (TERM_DATA_REG),a
     ret
 
-; Reads a single character. 0s are ignored (can be used with keyboard)
+; Reads a single character. 0s are ignored (can be used with keyboard).
+; Doesn't check DATA_AVAILABLE register of parallel port, because a 0 byte
+; is ignored anyway (it represents the ASCII NUL control char).
 ; @return A The read character
 Term_readc:
     in a, (TERM_DATA_REG)    ; reads a character
@@ -35,6 +38,8 @@ Term_readc:
     ret ; if not NULL, returns it in the a register
 
 ; Reads a line. 0s are ignored (can be used with keyboard)
+; Doesn't check DATA_AVAILABLE register of parallel port, because a 0 byte
+; is ignored anyway (it represents the ASCII NUL control char).
 ; @return BC The pointer to a null-terminated read string
 Term_readline:
     ld bc, incoming_string  ; this array will contain read string
@@ -56,9 +61,17 @@ Term_readline:
     ld bc, incoming_string  ; Returns read string pointer
     ret
 
-; Reads the byte currently on the I/O bus at the provided address.
+; Returns the number of bytes available on the parallel port using the 
+; DATA_AVAILABLE register.
+; @return a the number of available bytes
+Term_availb:
+    in a, (TERM_DATA_AVAIL_REG)
+    ret
+
+; Reads the first available byte on the serial port using the DATA register.
 ; 0s are not ignored (cannot be used with keyboard)
 ; Affects NO condition bits!
+; @return the available byte, even if 0
 Term_readb:
     in a, (TERM_DATA_REG)    ; reads a byte
     ret

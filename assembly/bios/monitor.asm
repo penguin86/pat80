@@ -25,6 +25,7 @@ MON_ARG_HEX: DB "    0x",0
 MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP shows memory content\nSET sets memory content LOAD\nRUN executes code\nADB starts Assembly Deploy Bridge",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
+;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
 
 Monitor_main:
     ; Print welcome string
@@ -101,8 +102,10 @@ monitor_adb:
     call Print
     ; start copying incoming data to application space
     call monitor_copyTermToAppMem
-    jp APP_SPACE    ; Start executing code
-    ;jp monitor_main_loop
+    ;jp APP_SPACE    ; Start executing code
+    ld bc, APP_SPACE
+    call Print
+    jp monitor_main_loop
 
 ; Read 1 hex byte (e.g. 0x8C)
 monitor_arg_byte:
@@ -160,22 +163,21 @@ monitor_readHexDigit:
     ret
 
 ; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
-; 0s are not ignored and the sequence is complete when found 8 zeros.
+; 0s are not ignored and the sequence is complete when no data is available for 8 cpu cycles.
 monitor_copyTermToAppMem:
-    call Term_readb
-    cp 0
-    jp z, monitor_copyTermToAppMem     ; wait for data stream to begin: ignore leading zeros
     ld hl, APP_SPACE    ; we will write in APP_SPACE
-    ld b, 8     ; the number of zeros that represent the end of stream
+    ld b, 255; MON_ADB_TIMEOUT     ; the timeout counter (number cycles without available data that represent the end of stream)
     monitor_copyTermToAppMem_loop:
+    dec b   ; decrement the timeout counter
+    ret 0   ; if counter is 0, timeout reached: return
+    ; check if bytes are available
+    call Term_availb
+    cp 0
+    jp z, monitor_copyTermToAppMem     ; no bytes available, next loop
+    ; bytes are available
+    ld b, 255 ;MON_ADB_TIMEOUT; reset the counter
     ld (hl), a  ; copy byte to memory
     inc hl  ; move to next memory position
-    cp 0    ; compare A to 0
-    ; load next byte to A (this doesn't affect condition bits, so flag Z from previous cp is still valid)
-    call Term_readb
-    jp nz, monitor_copyTermToAppMem_loop   ; if during previous cp A was not 0, execute next cycle
-    dec b   ; if A is 0, decrement "end of stream" counter
-    ret z   ; if B is 0, we found 8 zeros, so the stream is finished: return.
-    jp monitor_copyTermToAppMem_loop   ; otherwise, continue loop
+    jp monitor_copyTermToAppMem_loop   ; continue loop
 
 
