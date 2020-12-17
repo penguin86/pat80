@@ -75,7 +75,7 @@ monitor_help:
     call Print
     jp monitor_main_loop
 
-monitor_dump:
+monitor_dump:	; Test with DUMP 0x00A0 (contains text)
     ld bc, MON_COMMAND_DUMP + 1 ; autocomplete command
     call Print
     call monitor_arg_2byte  ; returns the read bytes in hl
@@ -84,6 +84,10 @@ monitor_dump:
     ; print character at mem position
     ld a, (hl)
     call Printc
+	call monitor_printHexByte
+	; print space
+	ld a, 32
+	call Printc
     ; move to next mem position
     inc hl
     ; decrement counter: if non zero continue loop
@@ -198,6 +202,50 @@ monitor_readHexDigit:
     ; Its numeric value is 10 (A) to 15 (F). To obtain this, subtract 55.
     sub a, 55
     ret
+
+; Prints a byte in hex format: splits it in two nibbles and prints the two hex digits
+; @param a the byte to print
+; @uses a, b, c
+monitor_printHexByte:
+    ld c, a
+    ; shift out the least significant nibble to obtain a byte with the most significant nibble
+    ; in the least significant nibble position
+    sra a
+    sra a
+    sra a
+    sra a
+	call monitor_printHexDigit
+    ld a, c
+	and %00001111   ; bitwise and: set to 0 the most significant nibble and preserve the least
+    call monitor_printHexDigit
+	ret
+
+; Prints an hex digit
+; @param a provides the byte containing, in the LSBs, the nibble to print
+; @uses a, b
+monitor_printHexDigit:
+    ; check the input is valid (0 to 15)
+    ld b, a
+    sub 15
+    ; if positive, the input is invalid. Do not print anything.
+    ret p
+    ; now check if the digit is a letter (10 to 15 -> A to F)
+    ld a, b ; restore a
+    sub 10
+    ; if a is positive, the digit is a letter
+    jp p, monitor_printHexDigit_letter
+	ld a, b	; restore a
+    ; add 48 (the ASCII number for 0) to obtain the corresponding number
+    add 48
+	call Printc
+    ret
+    monitor_printHexDigit_letter:
+	ld a, b	; restore a
+    ; add 65 (the ASCII number for A) to obtain the corresponding letter
+    add 65
+	call Printc
+    ret
+
 
 ; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
 ; 0s are not ignored and the sequence is complete when no data is available for 8 cpu cycles.
