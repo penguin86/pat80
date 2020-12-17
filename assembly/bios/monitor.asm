@@ -14,7 +14,7 @@ include 'libs/strings.asm'
 
 ; CONSTANTS
 ; All monitor commands are 3 chars long.
-MON_WELCOME: DB "PAT80 MEMORY MONITOR 0.2",10,0
+MON_WELCOME: DB 10,"PAT80 MEMORY MONITOR 0.2",10,0
 MON_COMMAND_HELP: DB "HELP",0  ; null terminated strings
 MON_COMMAND_DUMP: DB "DUMP",0
 MON_COMMAND_SET: DB "SET",0
@@ -26,6 +26,8 @@ MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP shows memor
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 ;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
+MON_DUMP_BYTES_LINES: EQU 16
+MON_DUMP_BYTES_PER_LINE: EQU 12
 
 Monitor_main:
     ; Print welcome string
@@ -78,22 +80,41 @@ monitor_help:
 monitor_dump:	; Test with DUMP 0x00A0 (contains text)
     ld bc, MON_COMMAND_DUMP + 1 ; autocomplete command
     call Print
+    ; Now read the address from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
-    ld b, 64    ; the number of bytes to display
-    monitor_dump_show_bytes_loop:
-    ; print character at mem position
-    ld a, (hl)
+    ld a, 10 ; newline
     call Printc
-	call monitor_printHexByte
-	; print space
-	ld a, 32
-	call Printc
-    ; move to next mem position
-    inc hl
-    ; decrement counter: if non zero continue loop
-    dec b
-    jp nz, monitor_dump_show_bytes_loop
-    ; if counter 0, finished
+    ; now start displaying bytes from memory
+    ld e, MON_DUMP_BYTES_LINES    ; the number of lines to display
+    monitor_dump_show_bytes_loop:
+        ld d, MON_DUMP_BYTES_PER_LINE   ; the number of bytes per line to display
+        monitor_dump_show_bytes_line_loop:
+            ; print character at mem position
+            ld a, (hl)
+            ; print hex byte
+            call monitor_printHexByte
+            ; print space
+            ld a, 32
+            call Printc
+            ; print ascii
+            ld a, (hl)
+            call monitor_printAsciiByte
+            ; print two spaces
+            ld a, 32
+            call Printc
+            call Printc
+            ; move to next mem position
+            inc hl
+            ; decrement counter: if non zero continue loop
+            dec d
+            jp nz, monitor_dump_show_bytes_line_loop
+        ; print newline
+        ld a, 10
+        call Printc
+        ; decrement line counter
+        dec e
+        jp nz, monitor_dump_show_bytes_loop ; if line counter is not 0, print another line
+    ; if line counter 0, finished
     jp monitor_main_loop
 
 monitor_set:
@@ -208,12 +229,14 @@ monitor_readHexDigit:
 ; @uses a, b, c
 monitor_printHexByte:
     ld c, a
-    ; shift out the least significant nibble to obtain a byte with the most significant nibble
+    ; rotate out the least significant nibble to obtain a byte with the most significant nibble
     ; in the least significant nibble position
-    sra a
-    sra a
-    sra a
-    sra a
+    rrca a
+    rrca a
+    rrca a
+    rrca a
+    ; the upper nibble must now be discarded
+    and %00001111
 	call monitor_printHexDigit
     ld a, c
 	and %00001111   ; bitwise and: set to 0 the most significant nibble and preserve the least
@@ -226,7 +249,7 @@ monitor_printHexByte:
 monitor_printHexDigit:
     ; check the input is valid (0 to 15)
     ld b, a
-    sub 15
+    sub 16  ; subtract 16 instead of 15 cause 0 is positive
     ; if positive, the input is invalid. Do not print anything.
     ret p
     ; now check if the digit is a letter (10 to 15 -> A to F)
@@ -241,11 +264,33 @@ monitor_printHexDigit:
     ret
     monitor_printHexDigit_letter:
 	ld a, b	; restore a
-    ; add 65 (the ASCII number for A) to obtain the corresponding letter
-    add 65
+    ; to obtain the corresponding letter we should subtract 10 (so we count from A)
+    ; and add 65 (the ASCII number for A). So -10+65=+55 we add only 55.
+    add 55
 	call Printc
     ret
 
+; Prints an ASCII character. Similar to system Print function, but
+; ignores control characters and replaces any non-printable character with a dot.
+; @param a the byte to print
+; @uses a, b
+monitor_printAsciiByte:
+    ld b, a ; save a (it will be modified)
+    ; if < 32 is a control char, non printable
+    sub 32
+    jp m, monitor_printAsciiByte_nonprintable
+    ld a, b ; restore a
+    ; if >= 127 is an extended char, may not be printable
+    sub 127
+    jp p, monitor_printAsciiByte_nonprintable
+    ; otherwise is a printable ascii char
+    ld a, b ; restore a
+    call Printc
+    ret
+    monitor_printAsciiByte_nonprintable:
+    ld a, 46 ; print dot
+    call Printc
+    ret
 
 ; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
 ; 0s are not ignored and the sequence is complete when no data is available for 8 cpu cycles.
