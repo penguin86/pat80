@@ -88,6 +88,15 @@ monitor_dump:	; Test with DUMP 0x00A0 (contains text)
     ld e, MON_DUMP_BYTES_LINES    ; the number of lines to display
     monitor_dump_show_bytes_loop:
         ld d, MON_DUMP_BYTES_PER_LINE   ; the number of bytes per line to display
+        ; Print current address
+        ld a, h
+        call monitor_printHexByte
+        ld a, l
+        call monitor_printHexByte
+        ; print two spaces
+        ld a, 32
+        call Printc
+        call Printc
         monitor_dump_show_bytes_line_loop:
             ; print character at mem position
             ld a, (hl)
