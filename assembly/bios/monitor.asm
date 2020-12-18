@@ -3,7 +3,7 @@
 ;
 ; Monitor commands (CMD $arg):
 ;   H (HELP) Shows available commands
-;   D (DUMP) $pos Dumps first 100 bytes of memory starting at $pos
+;   D (DUMP) $pos Dumps bytes of memory starting at $pos
 ;   S (SET) $pos $val Replaces byte at $pos with $val
 ;   L (LOAD) $pos $val
 ;   R (RUN) $pos Starts executing code from $pos
@@ -13,7 +13,6 @@
 include 'libs/strings.asm'
 
 ; CONSTANTS
-; All monitor commands are 3 chars long.
 MON_WELCOME: DB 10,"PAT80 MEMORY MONITOR 0.2",10,0
 MON_COMMAND_HELP: DB "HELP",0  ; null terminated strings
 MON_COMMAND_DUMP: DB "DUMP",0
@@ -129,7 +128,39 @@ monitor_dump:	; Test with DUMP 0x00A0 (contains text)
 monitor_set:
     ld bc, MON_COMMAND_SET + 1 ; autocomplete command
     call Print
-    jp monitor_main_loop
+	; Now read the memory address to be changed from the user
+    call monitor_arg_2byte  ; returns the read bytes in hl
+    ld a, 10 ; newline
+    call Printc
+	; Start looping memory addresses
+	monitor_set_byte_loop:
+		; Print current address
+        ld a, h
+        call monitor_printHexByte
+        ld a, l
+        call monitor_printHexByte
+        ; print two spaces
+        ld a, 32
+        call Printc
+        call Printc
+		; print previous memory content (hex)
+		ld a, (hl)
+		call monitor_printHexByte
+		; print space
+		ld a, 32
+		; print previous memory content (ascii)
+		ld a, (hl)
+		call monitor_printAsciiByte
+		; print space
+		ld a, 32
+        call Printc
+		; ask the user the new memory content
+		call monitor_arg_byte	; returns the read byte in a
+		ld (hl), a ; write new byte to memory
+		inc hl ; next memory position
+    ; loops forever: the user can exit canceling a byte insertion (monitor_arg_byte)
+	;jp monitor_set_byte_loop
+	jp monitor_main_loop
 
 monitor_load:
     ld bc, MON_COMMAND_LOAD + 1 ; autocomplete command
@@ -184,18 +215,19 @@ monitor_arg_2byte:
 monitor_arg_byte_impl:
     ; Receive first hex digit
     call monitor_readHexDigit
-    ; First hex digit is the most signif nibble, so shift left by 4 bits
-    sla a
-    sla a
-    sla a
-    sla a
+    ; First hex digit is the most signif nibble, so rotate left by 4 bits
+    rlca a
+    rlca a
+    rlca a
+    rlca a
+    ; the lower nibble must now be discarded
+    and %11110000
     ld c, a     ; save shifted nibble in c
     ; Read second hex digit
     call monitor_readHexDigit
     ; Join the two nibbles in a single byte: second digit is already in a,
     ; so we OR with the previously shifted c and obtain the complete byte in a.
     or c
-    ld a, c ; store c in a for return
     ret
 
 ; Reads an hex digit (0 to 9, A to F)
