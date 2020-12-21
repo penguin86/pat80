@@ -21,12 +21,12 @@ MON_COMMAND_LOAD: DB "LOAD",0
 MON_COMMAND_RUN: DB "RUN",0
 MON_COMMAND_ADB: DB "ADB",0
 MON_ARG_HEX: DB "    0x",0
-MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP shows memory content\nSET sets memory content LOAD\nRUN executes code\nADB starts Assembly Deploy Bridge",0
+MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 ;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
-MON_DUMP_BYTES_LINES: EQU 16
-MON_DUMP_BYTES_PER_LINE: EQU 12
+MON_DUMP_BYTES_LINES: EQU 8
+MON_DUMP_BYTES_PER_LINE: EQU 8
 
 Monitor_main:
     ; Print welcome string
@@ -170,8 +170,11 @@ monitor_load:
 monitor_run:
     ld bc, MON_COMMAND_RUN + 1 ; autocomplete command
     call Print
-    jp APP_SPACE    ; Start executing code
-    jp monitor_main_loop
+    ; Now read the memory address to be changed from the user
+    call monitor_arg_2byte  ; returns the read bytes in hl
+    ld a, 10 ; newline
+    call Printc
+    jp (hl)    ; Start executing code
 
 monitor_adb:
     ld bc, MON_COMMAND_ADB + 1 ; autocomplete command
