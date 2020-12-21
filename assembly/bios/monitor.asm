@@ -76,7 +76,9 @@ monitor_help:
     call Print
     jp monitor_main_loop
 
-monitor_dump:	; Test with DUMP 0x00A0 (contains text)
+; Asks the user for a memory position and shows the following 64 bytes of memory
+; @uses a, b, c, d, e, h, l
+monitor_dump:
     ld bc, MON_COMMAND_DUMP + 1 ; autocomplete command
     call Print
     ; Now read the address from the user
@@ -86,36 +88,76 @@ monitor_dump:	; Test with DUMP 0x00A0 (contains text)
     ; now start displaying bytes from memory
     ld e, MON_DUMP_BYTES_LINES    ; the number of lines to display
     monitor_dump_show_bytes_loop:
-        ld d, MON_DUMP_BYTES_PER_LINE   ; the number of bytes per line to display
+        ld d, MON_DUMP_BYTES_PER_LINE*2   ; the number of bytes per line to display (*2 as we display two times the same byte: once hex and once ascii)
         ; Print current address
         ld a, h
         call monitor_printHexByte
         ld a, l
         call monitor_printHexByte
-        ; print two spaces
+        ; print four spaces
         ld a, 32
         call Printc
         call Printc
-        monitor_dump_show_bytes_line_loop:
-            ; print character at mem position
-            ld a, (hl)
-            ; print hex byte
-            call monitor_printHexByte
-            ; print space
-            ld a, 32
-            call Printc
-            ; print ascii
-            ld a, (hl)
-            call monitor_printAsciiByte
-            ; print two spaces
-            ld a, 32
-            call Printc
-            call Printc
-            ; move to next mem position
-            inc hl
-            ; decrement counter: if non zero continue loop
-            dec d
-            jp nz, monitor_dump_show_bytes_line_loop
+        call Printc
+        call Printc
+        monitor_dump_show_bytes_line_loop:  ; counts down from 15 to 0
+            ld a, d
+            sub MON_DUMP_BYTES_PER_LINE + 1
+            jp m, monitor_dump_show_bytes_line_loop_ascii   ; jp if
+                ; if position is 8 to 15, print hex value at mem position
+                ld a, (hl)
+                ; print hex byte
+                call monitor_printHexByte
+                ; print space
+                ld a, 32
+                call Printc
+                ; if position is 4, print a second space (to group nibbles)
+                ld a, d
+                cp MON_DUMP_BYTES_PER_LINE / 2 + MON_DUMP_BYTES_PER_LINE + 1
+                jp nz, no_second_space
+                    ; print second space
+                    ld a, 32
+                    call Printc
+                no_second_space:
+                ; move to next mem position
+                inc hl
+                ; decrement "nth byte on the line" counter
+                dec d
+                jp monitor_dump_show_bytes_line_loop
+            ; if position is 0 to 7, print ascii
+            monitor_dump_show_bytes_line_loop_ascii:
+                ; is this the first ascii char printed in this line?
+                ld a, d
+                cp MON_DUMP_BYTES_PER_LINE
+                jp nz, no_mempos_decr   ; no need to decrement, already done
+                    ; do this only once: printing hex values we advanced the counter by 8 positions. Bring it back.
+                    ld bc, MON_DUMP_BYTES_PER_LINE
+                    sbc hl, bc
+                    ; print 3 spaces to separate hex from ascii
+                    ld a, 32
+                    call Printc
+                    call Printc
+                    call Printc
+                no_mempos_decr:
+                ; print ascii
+                ld a, (hl)
+                call monitor_printAsciiByte
+                ; print space
+                ld a, 32
+                call Printc
+                ; if position is 12 (8+4), print a second space (to group nibbles)
+                ld a, d
+                cp MON_DUMP_BYTES_PER_LINE / 2 + 1
+                jp nz, no_second_space2
+                    ; print second space
+                    ld a, 32
+                    call Printc
+                no_second_space2:
+                ; move to next mem position
+                inc hl
+                ; decrement counter: if non zero continue loop
+                dec d
+                jp nz, monitor_dump_show_bytes_line_loop
         ; print newline
         ld a, 10
         call Printc
