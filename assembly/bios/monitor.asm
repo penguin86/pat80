@@ -167,15 +167,17 @@ monitor_dump:
     ; if line counter 0, finished
     jp monitor_main_loop
 
+; Asks user for a memory position and a byte and puts the byte in memory
+; @uses a, b, c, h, l
 monitor_set:
     ld bc, MON_COMMAND_SET + 1 ; autocomplete command
     call Print
 	; Now read the memory address to be changed from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
-    ld a, 10 ; newline
-    call Printc
 	; Start looping memory addresses
 	monitor_set_byte_loop:
+		ld a, 10 ; newline
+		call Printc
 		; Print current address
         ld a, h
         call monitor_printHexByte
@@ -188,8 +190,10 @@ monitor_set:
 		; print previous memory content (hex)
 		ld a, (hl)
 		call monitor_printHexByte
-		; print space
-		ld a, 32
+		; print two spaces
+        ld a, 32
+        call Printc
+        call Printc
 		; print previous memory content (ascii)
 		ld a, (hl)
 		call monitor_printAsciiByte
@@ -197,12 +201,27 @@ monitor_set:
 		ld a, 32
         call Printc
 		; ask the user the new memory content
-		call monitor_arg_byte	; returns the read byte in a
+		call monitor_arg_byte	; returns the read byte in a, exit code in b
+		; find if user pressed Q/ENTER
+		ld c, a ; save a
+		ld a, b ; exit code in a
+		cp 1 ; check if user pressed Q
+		jp z, monitor_main_loop	; user wants to exit
+		ld a, b
+		cp 2 ; check if user pressed ENTER
+		jp z, monitor_set_skipbyte ; user doesn't want to replace current byte: skip
+		; user didn't press Q/ENTER: he inserted a valid byte
+		; print two spaces
+        ld a, 32
+        call Printc
+        call Printc
+		ld a, c ; restore valid byte in a
+		call monitor_printAsciiByte ; print user-inserted byte in ascii
+		ld a, c ; restore valid byte in a
 		ld (hl), a ; write new byte to memory
+		monitor_set_skipbyte:
 		inc hl ; next memory position
-    ; loops forever: the user can exit canceling a byte insertion (monitor_arg_byte)
-	;jp monitor_set_byte_loop
-	jp monitor_main_loop
+	jp monitor_set_byte_loop
 
 monitor_load:
     ld bc, MON_COMMAND_LOAD + 1 ; autocomplete command
@@ -229,7 +248,8 @@ monitor_adb:
     jp monitor_main_loop
 
 ; Prints "0x" and read 1 hex byte (2 hex digits, e.g. 0x8C)
-; @return a the read byte
+; Can be cancelled with Q/ENTER
+; @return a the read byte, b the exit code (0=valid byte in a, 1=Q, 2=ENTER)
 ; @uses a, b, c
 monitor_arg_byte:
     ; Print 0x... prompt
@@ -240,6 +260,7 @@ monitor_arg_byte:
     ret
 
 ; Prints "0x" and reads 2 hex bytes (4 hex digits e.g. 0x3F09)
+; Ignores Q/ENTER keys
 ; @return hl the two read bytes
 ; @uses a, b, c, h, l
 monitor_arg_2byte:
@@ -255,16 +276,24 @@ monitor_arg_2byte:
     ret
 
 ; Read 2 hex digits
-; @return a the read byte
+; @return a the read byte, b the exit code 
+; (0 if no control key was, pressed, 1 for Q, 2 for RETURN)
 ; @uses a, b, c
 monitor_arg_byte_impl:
-    ; Receive first hex digit
+    ; Receive first hex digit. Value in a, exit code in b
     call monitor_readHexDigit
+	; check exit code to find if user pressed esc or return
+	ld c, a ; save a
+	ld a, b ; load exit code in a
+	cp 0
+	jp nz, monitor_arg_byte_impl_exitcode	; user pressed Q/RETURN key
+	; user didn't press Q/RETURN: returned nibble is valid
+	ld a, c ; restore a and discard c
     ; First hex digit is the most signif nibble, so rotate left by 4 bits
-    rlca a
-    rlca a
-    rlca a
-    rlca a
+    rlca
+    rlca
+    rlca
+    rlca
     ; the lower nibble must now be discarded
     and %11110000
     ld c, a     ; save shifted nibble in c
@@ -275,11 +304,29 @@ monitor_arg_byte_impl:
     or c
     ret
 
+	monitor_arg_byte_impl_exitcode:
+	; user pressed Q/RETURN key. Exit code is now in a.
+	ld b, a	; move exit code in b
+	ld a, 0 ; clear a
+	ret
+
+
+
 ; Reads an hex digit (0 to 9, A to F)
-; @return a the read nibble
+; @return a the read nibble (or 0 if Q/RETURN was pressed), b the exit code 
+; (0 if no control key was, pressed, 1 for Q, 2 for RETURN)
 ; @uses a, b
 monitor_readHexDigit:
     call Readc
+	; check if user pressed Q
+	; if user pressed Q, return exit code 1 in b and 0 in a
+	cp 81
+	jp z, monitor_readHexDigit_esc
+	; check if user pressed RETURN
+	; if user pressed RETURN, return exit code 2 in b and 0 in a
+	cp 10
+	jp z, monitor_readHexDigit_return
+	
     ; check if is a valid hex digit (0-9 -> ascii codes 48 to 57; A-F -> ascii codes 65 to 70)
     ; first check if is between 0 and F(ascii codes 48 to 70)
     ld b, a
@@ -297,6 +344,7 @@ monitor_readHexDigit:
     call Printc
     ; then convert to its value subtracting 48
     sub a, 48
+	ld b, 0 ; set b to exit code 0 to represent "valid value in a"
     ret
     monitor_readHexDigit_char:
     ; check if is A, B, C, D, E, F (ascii codes 65 to 70). We already checked it is less than 70.
@@ -308,9 +356,20 @@ monitor_readHexDigit:
     call Printc
     ; Its numeric value is 10 (A) to 15 (F). To obtain this, subtract 55.
     sub a, 55
+	ld b, 0 ; set b to exit code 0 to represent "valid value in a"
     ret
 
+	monitor_readHexDigit_esc:
+	ld a, 0
+	ld b, 1
+	ret
+	monitor_readHexDigit_return:
+	ld a, 0
+	ld b, 2
+	ret
+
 ; Prints a byte in hex format: splits it in two nibbles and prints the two hex digits
+; NOTE: The byte in a will be modified!
 ; @param a the byte to print
 ; @uses a, b, c
 monitor_printHexByte:
@@ -358,6 +417,7 @@ monitor_printHexDigit:
 
 ; Prints an ASCII character. Similar to system Print function, but
 ; ignores control characters and replaces any non-printable character with a dot.
+; NOTE: the a register is modified
 ; @param a the byte to print
 ; @uses a, b
 monitor_printAsciiByte:
