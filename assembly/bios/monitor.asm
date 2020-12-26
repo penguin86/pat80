@@ -17,11 +17,12 @@ MON_WELCOME: DB 10,"PAT80 MEMORY MONITOR 0.2",10,0
 MON_COMMAND_HELP: DB "HELP",0  ; null terminated strings
 MON_COMMAND_DUMP: DB "DUMP",0
 MON_COMMAND_SET: DB "SET",0
+MON_COMMAND_ZERO: DB "ZERO",0
 MON_COMMAND_LOAD: DB "LOAD",0
 MON_COMMAND_RUN: DB "RUN",0
 MON_COMMAND_ADB: DB "ADB",0
 MON_ARG_HEX: DB "    0x",0
-MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge",0
+MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nZERO [ADDR] [ADDR] sets all bytes to 0 in the specified range\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 ;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
@@ -53,6 +54,9 @@ Monitor_main:
         ld hl, MON_COMMAND_SET
         cp (hl)
         jp z, monitor_set
+        ld hl, MON_COMMAND_ZERO
+        cp (hl)
+        jp z, monitor_zero
         ld hl, MON_COMMAND_LOAD
         cp (hl)
         jp z, monitor_load
@@ -222,6 +226,33 @@ monitor_set:
 		monitor_set_skipbyte:
 		inc hl ; next memory position
 	jp monitor_set_byte_loop
+
+; Asks user for a memory range and sets all bytes to zero in that range in memory
+; @uses a, b, c, h, l
+monitor_zero: ; TODO: bugged, doesn't exit cycle
+	ld bc, MON_COMMAND_ZERO + 1 ; autocomplete command
+    call Print
+	; Now read the starting memory address
+    call monitor_arg_2byte  ; returns the read bytes in hl
+	; starting addr in bc
+	ld b, h
+	ld c, l
+	call monitor_arg_2byte  ; ending addr in hl	
+	; Start looping memory addresses (from last to first)
+	monitor_zero_loop:
+		ld (hl), 0 ; set byte to 0 in memory
+		dec hl	; next byte
+		; check if we reached start addr (one byte at time)
+		ld a, b
+		cp h
+		jp nz, monitor_zero_loop	; first byte is different, continue loop
+		; first byte is equal, check second one
+		ld a, c
+		cp l
+		jp nz, monitor_zero_loop	; second byte is different, continue loop
+		; reached destination addr: zero the last byte and return
+		ld (hl), 0 ; set byte to 0 in memory
+		ret
 
 monitor_load:
     ld bc, MON_COMMAND_LOAD + 1 ; autocomplete command
