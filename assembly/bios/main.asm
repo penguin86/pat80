@@ -19,6 +19,45 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 ;   I/O 6 (0xC0 - 0xDF)
 ;   I/O 7 (0xE0 - 0xFF)
 
+; **** SYSTEM CALLS ****
+; System calls provide access to low level functions (input from keyboard, output to screen etc).
+; The name starts always with Sys_
+
+; Prints string
+; @param BC Pointer to a null-terminated string first character
+org 0x0010
+Sys_Print:
+    call Term_print
+    ret
+
+; Writes a single character
+; @param A Value of character to print
+org 0x0020
+Sys_Printc:
+    call Term_printc
+    ret
+
+; Reads a single character
+; @return A The read character
+org 0x0030
+Sys_Readc:
+    call Term_readc
+    ret
+
+; Reads a line
+; @return BC The pointer to a null-terminated read string
+org 0x0040
+Sys_Readline:
+    call Term_readline
+    ret
+
+; Emits system beep
+org 0x0050
+Sys_Beep:
+    call Snd_beep
+    ret
+
+
 
 ; MEMORY CONFIGURATION
 SYS_VAR_SPACE: EQU 0x8000
@@ -49,37 +88,6 @@ include 'libs/time.asm'
 ;include 'tests/sndtest.asm'
 
 
-; **** SYSTEM CALLS ****
-
-; Prints string
-; @param BC Pointer to a null-terminated string first character
-Print:
-    call Term_print
-    ret
-
-; Writes a single character
-; @param A Value of character to print
-Printc:
-    call Term_printc
-    ret
-
-; Reads a single character
-; @return A The read character
-Readc:
-    call Term_readc
-    ret
-
-; Reads a line
-; @return BC The pointer to a null-terminated read string
-Readline:
-    call Term_readline
-    ret
-
-; Emits system beep
-Beep:
-    call Snd_beep
-    ret
-
 ; **** SYSTEM INITIALIZATION ****
 Sysinit:
     ; Init snd driver
@@ -93,7 +101,7 @@ Sysinit:
     call Time_delay55
 
     ; Play startup sound
-    call Beep
+    call Sys_Beep
 
     ; Run memory monitor
     call Monitor_main

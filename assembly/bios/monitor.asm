@@ -32,18 +32,18 @@ MON_DUMP_BYTES_PER_LINE: EQU 8
 Monitor_main:
     ; Print welcome string
     ld bc, MON_WELCOME
-    call Print
+    call Sys_Print
     monitor_main_loop:
         ; Newline
         ld a, 10
-        call Printc
+        call Sys_Printc
         ; Draw prompt char
         ld a, 62 ; >
-        call Printc
+        call Sys_Printc
         ; Read char from command line
-        call Readc     ; blocking: returns when a character was read and placed in A reg
+        call Sys_Readc     ; blocking: returns when a character was read and placed in A reg
         call Strings_charToUpper    ; user may enter lowercase char: transform to upper
-        call Printc     ; Print back the character to provide user feedback
+        call Sys_Printc     ; Print back the character to provide user feedback
         ; Switch case
         ld hl, MON_COMMAND_HELP
         cp (hl)  ; check incoming char is equal to command's first char
@@ -68,27 +68,27 @@ Monitor_main:
         jp z, monitor_adb
         ; Unrecognized command: print error and beep
         ld bc, MON_ERR_SYNTAX
-        call Print
-        call Beep
+        call Sys_Print
+        call Sys_Beep
     jp monitor_main_loop
 
 monitor_help:
     ld bc, MON_COMMAND_HELP + 1 ; autocomplete command
-    call Print
+    call Sys_Print
 
     ld bc, MON_HELP
-    call Print
+    call Sys_Print
     jp monitor_main_loop
 
 ; Asks the user for a memory position and shows the following 64 bytes of memory
 ; @uses a, b, c, d, e, h, l
 monitor_dump:
     ld bc, MON_COMMAND_DUMP + 1 ; autocomplete command
-    call Print
+    call Sys_Print
     ; Now read the address from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
     ld a, 10 ; newline
-    call Printc
+    call Sys_Printc
     ; now start displaying bytes from memory
     ld e, MON_DUMP_BYTES_LINES    ; the number of lines to display
     monitor_dump_show_bytes_loop:
@@ -100,10 +100,10 @@ monitor_dump:
         call monitor_printHexByte
         ; print four spaces
         ld a, 32
-        call Printc
-        call Printc
-        call Printc
-        call Printc
+        call Sys_Printc
+        call Sys_Printc
+        call Sys_Printc
+        call Sys_Printc
         monitor_dump_show_bytes_line_loop:  ; counts down from 15 to 0
             ld a, d
             sub MON_DUMP_BYTES_PER_LINE + 1
@@ -114,14 +114,14 @@ monitor_dump:
                 call monitor_printHexByte
                 ; print space
                 ld a, 32
-                call Printc
+                call Sys_Printc
                 ; if position is 4, print a second space (to group nibbles)
                 ld a, d
                 cp MON_DUMP_BYTES_PER_LINE / 2 + MON_DUMP_BYTES_PER_LINE + 1
                 jp nz, no_second_space
                     ; print second space
                     ld a, 32
-                    call Printc
+                    call Sys_Printc
                 no_second_space:
                 ; move to next mem position
                 inc hl
@@ -139,23 +139,23 @@ monitor_dump:
                     sbc hl, bc
                     ; print 3 spaces to separate hex from ascii
                     ld a, 32
-                    call Printc
-                    call Printc
-                    call Printc
+                    call Sys_Printc
+                    call Sys_Printc
+                    call Sys_Printc
                 no_mempos_decr:
                 ; print ascii
                 ld a, (hl)
                 call monitor_printAsciiByte
                 ; print space
                 ld a, 32
-                call Printc
+                call Sys_Printc
                 ; if position is 12 (8+4), print a second space (to group nibbles)
                 ld a, d
                 cp MON_DUMP_BYTES_PER_LINE / 2 + 1
                 jp nz, no_second_space2
                     ; print second space
                     ld a, 32
-                    call Printc
+                    call Sys_Printc
                 no_second_space2:
                 ; move to next mem position
                 inc hl
@@ -164,7 +164,7 @@ monitor_dump:
                 jp nz, monitor_dump_show_bytes_line_loop
         ; print newline
         ld a, 10
-        call Printc
+        call Sys_Printc
         ; decrement line counter
         dec e
         jp nz, monitor_dump_show_bytes_loop ; if line counter is not 0, print another line
@@ -175,13 +175,13 @@ monitor_dump:
 ; @uses a, b, c, h, l
 monitor_set:
     ld bc, MON_COMMAND_SET + 1 ; autocomplete command
-    call Print
+    call Sys_Print
 	; Now read the memory address to be changed from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
 	; Start looping memory addresses
 	monitor_set_byte_loop:
 		ld a, 10 ; newline
-		call Printc
+		call Sys_Printc
 		; Print current address
         ld a, h
         call monitor_printHexByte
@@ -189,21 +189,21 @@ monitor_set:
         call monitor_printHexByte
         ; print two spaces
         ld a, 32
-        call Printc
-        call Printc
+        call Sys_Printc
+        call Sys_Printc
 		; print previous memory content (hex)
 		ld a, (hl)
 		call monitor_printHexByte
 		; print two spaces
         ld a, 32
-        call Printc
-        call Printc
+        call Sys_Printc
+        call Sys_Printc
 		; print previous memory content (ascii)
 		ld a, (hl)
 		call monitor_printAsciiByte
 		; print space
 		ld a, 32
-        call Printc
+        call Sys_Printc
 		; ask the user the new memory content
 		call monitor_arg_byte	; returns the read byte in a, exit code in b
 		; find if user pressed Q/ENTER
@@ -217,8 +217,8 @@ monitor_set:
 		; user didn't press Q/ENTER: he inserted a valid byte
 		; print two spaces
         ld a, 32
-        call Printc
-        call Printc
+        call Sys_Printc
+        call Sys_Printc
 		ld a, c ; restore valid byte in a
 		call monitor_printAsciiByte ; print user-inserted byte in ascii
 		ld a, c ; restore valid byte in a
@@ -231,7 +231,7 @@ monitor_set:
 ; @uses a, b, c, h, l
 monitor_zero: ; TODO: bugged, doesn't exit cycle
 	ld bc, MON_COMMAND_ZERO + 1 ; autocomplete command
-    call Print
+    call Sys_Print
 	; Now read the starting memory address
     call monitor_arg_2byte  ; returns the read bytes in hl
 	; starting addr in bc
@@ -256,26 +256,26 @@ monitor_zero: ; TODO: bugged, doesn't exit cycle
 
 monitor_load:
     ld bc, MON_COMMAND_LOAD + 1 ; autocomplete command
-    call Print
+    call Sys_Print
     jp monitor_main_loop
 
 monitor_run:
     ld bc, MON_COMMAND_RUN + 1 ; autocomplete command
-    call Print
+    call Sys_Print
     ; Now read the memory address to be changed from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
     ld a, 10 ; newline
-    call Printc
+    call Sys_Printc
     jp (hl)    ; Start executing code
 
 monitor_adb:
     ld bc, MON_COMMAND_ADB + 1 ; autocomplete command
-    call Print
+    call Sys_Print
     ; start copying incoming data to application space
     call monitor_copyTermToAppMem
     ;jp APP_SPACE    ; Start executing code
     ld bc, APP_SPACE
-    call Print
+    call Sys_Print
     jp monitor_main_loop
 
 ; Prints "0x" and read 1 hex byte (2 hex digits, e.g. 0x8C)
@@ -285,7 +285,7 @@ monitor_adb:
 monitor_arg_byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
-    call Print
+    call Sys_Print
     ; Read 2 digits
     call monitor_arg_byte_impl
     ret
@@ -297,7 +297,7 @@ monitor_arg_byte:
 monitor_arg_2byte:
     ; Print 0x... prompt
     ld bc, MON_ARG_HEX
-    call Print
+    call Sys_Print
     ; Read 2 digits
     call monitor_arg_byte_impl
     ld h, a ; move result to h
@@ -348,7 +348,7 @@ monitor_arg_byte_impl:
 ; (0 if no control key was, pressed, 1 for Q, 2 for RETURN)
 ; @uses a, b
 monitor_readHexDigit:
-    call Readc
+    call Sys_Readc
 	; check if user pressed Q
 	; if user pressed Q, return exit code 1 in b and 0 in a
 	cp 81
@@ -372,7 +372,7 @@ monitor_readHexDigit:
     jp p, monitor_readHexDigit_char  ; if not negative (ns), maybe is a char
     ; otherwise is a number! First print for visive feedback
     ld a, b
-    call Printc
+    call Sys_Printc
     ; then convert to its value subtracting 48
     sub a, 48
 	ld b, 0 ; set b to exit code 0 to represent "valid value in a"
@@ -384,7 +384,7 @@ monitor_readHexDigit:
     jp m, monitor_readHexDigit  ; if negative (s), ascii code is under 65: ignore char
     ; otherwise is a valid char (A-F). Print for visive feedback
     ld a, b
-    call Printc
+    call Sys_Printc
     ; Its numeric value is 10 (A) to 15 (F). To obtain this, subtract 55.
     sub a, 55
 	ld b, 0 ; set b to exit code 0 to represent "valid value in a"
@@ -407,10 +407,10 @@ monitor_printHexByte:
     ld c, a
     ; rotate out the least significant nibble to obtain a byte with the most significant nibble
     ; in the least significant nibble position
-    rrca a
-    rrca a
-    rrca a
-    rrca a
+    rrca
+    rrca
+    rrca
+    rrca
     ; the upper nibble must now be discarded
     and %00001111
 	call monitor_printHexDigit
@@ -436,14 +436,14 @@ monitor_printHexDigit:
 	ld a, b	; restore a
     ; add 48 (the ASCII number for 0) to obtain the corresponding number
     add 48
-	call Printc
+	call Sys_Printc
     ret
     monitor_printHexDigit_letter:
 	ld a, b	; restore a
     ; to obtain the corresponding letter we should subtract 10 (so we count from A)
     ; and add 65 (the ASCII number for A). So -10+65=+55 we add only 55.
     add 55
-	call Printc
+	call Sys_Printc
     ret
 
 ; Prints an ASCII character. Similar to system Print function, but
@@ -462,11 +462,11 @@ monitor_printAsciiByte:
     jp p, monitor_printAsciiByte_nonprintable
     ; otherwise is a printable ascii char
     ld a, b ; restore a
-    call Printc
+    call Sys_Printc
     ret
     monitor_printAsciiByte_nonprintable:
     ld a, 46 ; print dot
-    call Printc
+    call Sys_Printc
     ret
 
 ; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
@@ -476,7 +476,7 @@ monitor_copyTermToAppMem:
     ld b, 255; MON_ADB_TIMEOUT     ; the timeout counter (number cycles without available data that represent the end of stream)
     monitor_copyTermToAppMem_loop:
     dec b   ; decrement the timeout counter
-    ret 0   ; if counter is 0, timeout reached: return
+    ret z   ; if counter is 0, timeout reached: return
     ; check if bytes are available
     call Term_availb
     cp 0

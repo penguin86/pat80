@@ -12,9 +12,9 @@ Time_delay55:
     bit     0,a    ; 8
     bit     0,a    ; 8
     bit     0,a    ; 8
-    and     a,255  ; 7
+    and     255  ; 7
     dec     bc      ; 6
     ld      a,c     ; 4
-    or      a,b     ; 4
+    or      b     ; 4
     jp      nz,Time_delay55   ; 10, total = 55 states/iteration
     ret
