@@ -1,3 +1,0 @@
-ld bc, 0xA000
-call 0x0010
-jp 0

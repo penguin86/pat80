@@ -1,5 +1,0 @@
-Sys_Beep:	equ $0050
-Sys_Print:	equ $0010
-Sys_Printc:	equ $0020
-Sys_Readc:	equ $0030
-Sys_Readline:	equ $0040

@@ -23,39 +23,37 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 ; System calls provide access to low level functions (input from keyboard, output to screen etc).
 ; The name starts always with Sys_
 
+; Returns ABI version.
+; (ABI -> https://en.wikipedia.org/wiki/Application_binary_interface)
+; Any Pat80 application should check the ABI version on startup, and refuse to run if not compatible.
+; @return bc the ABI version
+Sys_ABI:
+    ld bc, 0
+    ret
+
 ; Prints string
 ; @param BC Pointer to a null-terminated string first character
-org 0x0010
 Sys_Print:
-    call Term_print
-    ret
+    jp Term_print
 
 ; Writes a single character
 ; @param A Value of character to print
-org 0x0020
 Sys_Printc:
-    call Term_printc
-    ret
+    jp Term_printc
 
 ; Reads a single character
 ; @return A The read character
-org 0x0030
 Sys_Readc:
-    call Term_readc
-    ret
+    jp Term_readc
 
 ; Reads a line
 ; @return BC The pointer to a null-terminated read string
-org 0x0040
 Sys_Readline:
-    call Term_readline
-    ret
+    jp Term_readline
 
 ; Emits system beep
-org 0x0050
 Sys_Beep:
-    call Snd_beep
-    ret
+    jp Snd_beep
 
 
 
