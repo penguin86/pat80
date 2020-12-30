@@ -1,4 +1,4 @@
-bios:
+os:
 	@echo "Building PAT80 rom..."
 	@z80asm -i main.asm -o rom.bin || (exit 1)
 	@echo "Generating label lookup table..."
