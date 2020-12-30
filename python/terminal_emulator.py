@@ -27,6 +27,7 @@ import serial
 import curses
 import time
 import textwrap
+import os
 
 
 class TerminalEmulator:
@@ -66,6 +67,15 @@ class TerminalEmulator:
         w.addstr(0, 0, '[ADB MODE] file to load:', curses.A_REVERSE)
         path = w.getstr()
         try:
+            size = os.path.getsize(path)
+            # Compute the two header bytes needed to declare the length of the stream
+            h1 = size & 255 # get lower 8 bits
+            size >>= 8 # shift by 8 bits
+            h0 = size & 255 # get second lower 8 bits
+            # Send the two heading bytes (most significant first)
+            ser.write(h0)
+            ser.write(h1)
+            # Send the actual binary stream
             with open(path, "rb") as f:
                 byte = f.read(1)
                 while byte:

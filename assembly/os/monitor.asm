@@ -469,22 +469,47 @@ monitor_printAsciiByte:
     call Sys_Printc
     ret
 
-; Copy data from STDIN to application memory. This is tought to be used with parallel terminal, not keyboard:
-; 0s are not ignored and the sequence is complete when no data is available for 8 cpu cycles.
+; Copy data from parallel terminal to application memory. This is tought to be used with the ADB function of the Pat80 Python Terminal.
+; Uses TERM_DATA_AVAIL_REG to check if a byte is available before reading it.
+; The first two received bytes (heading bytes) defines the stream length (MSB first), the rest of the bytes are copied to memory.
+; The copy is completed when the number of bytes defined in the heading bytes are received.
+; @uses a, b, c, d, h, l
 monitor_copyTermToAppMem:
+    ; d contains the current status.
+    ; 2 = waiting for first heading byte
+    ; 1 = waiting for second heading byte
+    ; 0 = heading bytes received, now receiving binary stream
+    ld d, 2
     ld hl, APP_SPACE    ; we will write in APP_SPACE
-    ld b, 255; MON_ADB_TIMEOUT     ; the timeout counter (number cycles without available data that represent the end of stream)
     monitor_copyTermToAppMem_loop:
-    dec b   ; decrement the timeout counter
-    ret z   ; if counter is 0, timeout reached: return
-    ; check if bytes are available
-    call Term_availb
-    cp 0
-    jp z, monitor_copyTermToAppMem     ; no bytes available, next loop
-    ; bytes are available
-    ld b, 255 ;MON_ADB_TIMEOUT; reset the counter
-    ld (hl), a  ; copy byte to memory
-    inc hl  ; move to next memory position
+        ; check if bytes are available
+        call Term_availb
+        cp 0
+        jp z, monitor_copyTermToAppMem     ; no bytes available, next loop
+        ; bytes are available
+        ld a, d
+        cp 2    ; check if we are receiving first header byte
+        jp z, monitor_copyTermToAppMem_loop_rec_head_byte_1
+        ld a, d
+        cp 1    ; check if we are receiving second header byte
+        jp z, monitor_copyTermToAppMem_loop_rec_head_byte_2
+        ; we are receiving binary stream: read byte and save to memory
+        call Term_readb
+        ld (hl), a  ; copy byte to memory
+        inc hl  ; move to next memory position
     jp monitor_copyTermToAppMem_loop   ; continue loop
+
+    monitor_copyTermToAppMem_loop_rec_head_byte_1:
+        ; we are receiving first header byte: read byte and save to b
+        call Term_readb
+        ld b, a
+        dec d
+        jp monitor_copyTermToAppMem_loop   ; continue loop
+    monitor_copyTermToAppMem_loop_rec_head_byte_2:
+        ; we are receiving second header byte: read byte and save to c
+        call Term_readb
+        ld c, a
+        dec d
+        jp monitor_copyTermToAppMem_loop   ; continue loop
 
 
