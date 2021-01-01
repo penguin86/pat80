@@ -40,7 +40,7 @@ Snd_beep:
     ld a,%00001000
     out (SND_DATA_REG),a
     ; wait
-    ld bc, (TIME_DUR_MILLIS * 100)
+    ld bc, (TIME_DUR_MILLIS * 10)
     call Time_delay55
     ; silence ch1
     ld a,%10011111

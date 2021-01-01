@@ -1,6 +1,6 @@
 /**
  * SPI SD-Card test sketch
- * Reads the first 128 bytes from cf and prints it out as ascii characters in serial monitor at 9200 baud
+ * Reads the first 128 bytes from sdcard and prints it out as ascii characters in serial monitor at 9200 baud
  * 
  * Implementation of the specification at http://elm-chan.org/docs/mmc/mmc_e.html
  */
@@ -35,10 +35,41 @@ void setup() {
 
   // CMD0 with CS low (Software reset). Means "Leave native mode and enter SPI mode"
   digitalWrite(CS, LOW);
-  sendCommand(B01000000); // First two bits are always 01. Command is 0 (000000).
+  byte arg[] = {0x00,0x00,0x00,0x00};
+  sendCommand(B01000000, arg); // First two bits are always 01. Command is 0 (000000).
   byte resp = receiveResponse();
-  Serial.println("Card response:");
+  Serial.print("    CMD0 response: ");
   Serial.println(resp, HEX);
+  // Now card is in idle mode
+
+  // Send CMD8 (check voltage) to find if sd version is 2 or previous
+  byte arg2[] = {0x00,0x00,0x00,0x00};
+  sendCommand(B01001000, arg2); // CMD8
+  resp = receiveResponse();
+  Serial.print("    CMD8 response: ");
+  Serial.println(resp, HEX);
+
+  if (resp == 5) {
+    // CMD8 Illegal command: sd version 1.X
+
+    while(true) {
+      // Now send ACMD41. ACMD is a CMD55 followed by a CMDxx
+      byte arg3[] = {0x00,0x00,0x00,0x00};
+      sendCommand(B01110111, arg3); // CMD55
+      //resp = receiveResponse();
+      Serial.print("    CMD55 response: ");
+      Serial.println(resp, HEX);
+      byte arg4[] = {0x40,0x00,0x00,0x00};
+      sendCommand(B01101001, arg4); // CMD41
+      resp = receiveResponse();
+      Serial.print("    CMD41 response: ");
+      Serial.println(resp, HEX);
+    }
+  } else {
+    Serial.print("Sd version 2 not supported.");
+  }
+  
+  
   digitalWrite(CS, HIGH);
 
 }
@@ -61,12 +92,12 @@ void clk() {
  * This is ok, since the CRC field will not be checked in SPI mode.
  * @param index: the command index byte. First two bytes are the sync bytes "01".
  */
-void sendCommand(byte index) {
+void sendCommand(byte index, byte arg[]) {
   // Send command index (2+6=8 bits)
   sendByte(index);
   // Send argument (32 bit)
   for(byte i=0; i<4; i++) {
-    sendByte(0);
+    sendByte(arg[i]);
   }
   // Send CRC with final stop bit (7+1=8 bits)
   sendByte(B10010101);  // We send always the CMD0 CRC, because is not checked in SPI mode
@@ -80,6 +111,7 @@ void sendByte(byte b) {
   for (byte i=0; i<8; i++) {
     // If last bit is 1 set MOSI HIGH, else LOW
     digitalWrite(MOSI, (b & B10000000) == B10000000 ? HIGH : LOW);
+    //Serial.print((b & B10000000) == B10000000 ? "1" : "0");
     clk();
     // Shift byte to have, in the next cycle, the next bit in last position
     b = b << 1;
@@ -103,11 +135,9 @@ byte receiveResponse() {
   byte resp = 0;
   // Read 8 bits
   for (byte i=0; i<8; i++) {
-    if (digitalRead(MISO)) {
-      resp = resp | B00000001;
-    }
     resp = resp << 1;
+    resp = resp | digitalRead(MISO);
     clk();
   }
-  
+  return resp;
 }
