@@ -274,8 +274,8 @@ monitor_adb:
     ; start copying incoming data to application space
     call monitor_copyTermToAppMem
     ;jp APP_SPACE    ; Start executing code
-    ld bc, APP_SPACE
-    call Sys_Print
+    ; ld bc, APP_SPACE
+    ; call Sys_Print
     jp monitor_main_loop
 
 ; Prints "0x" and read 1 hex byte (2 hex digits, e.g. 0x8C)
@@ -482,11 +482,6 @@ monitor_copyTermToAppMem:
     ld d, 2
     ld hl, APP_SPACE    ; we will write in APP_SPACE
     monitor_copyTermToAppMem_loop:
-        ; check if bytes are available
-        call Term_availb
-        cp 0
-        jp z, monitor_copyTermToAppMem     ; no bytes available, next loop
-        ; bytes are available
         ld a, d
         cp 2    ; check if we are receiving first header byte
         jp z, monitor_copyTermToAppMem_loop_rec_head_byte_1
@@ -494,20 +489,29 @@ monitor_copyTermToAppMem:
         cp 1    ; check if we are receiving second header byte
         jp z, monitor_copyTermToAppMem_loop_rec_head_byte_2
         ; we are receiving binary stream: read byte and save to memory
-        call Term_readb
+        call Term_readb ; reads a byte from terminal
         ld (hl), a  ; copy byte to memory
         inc hl  ; move to next memory position
-    jp monitor_copyTermToAppMem_loop   ; continue loop
+        dec bc  ; decrement remaining bytes counter
+        ; check if we reached the number of bytes to be transferred
+        ld a, b
+        cp 0
+        jp nz, monitor_copyTermToAppMem_loop   ; continue loop
+        ld a, c
+        cp 0
+        jp nz, monitor_copyTermToAppMem_loop   ; continue loop
+        ; all bytes received, return
+        ret
 
     monitor_copyTermToAppMem_loop_rec_head_byte_1:
         ; we are receiving first header byte: read byte and save to b
-        call Term_readb
+        call Term_readb ; reads a byte from terminal
         ld b, a
         dec d
         jp monitor_copyTermToAppMem_loop   ; continue loop
     monitor_copyTermToAppMem_loop_rec_head_byte_2:
         ; we are receiving second header byte: read byte and save to c
-        call Term_readb
+        call Term_readb ; reads a byte from terminal
         ld c, a
         dec d
         jp monitor_copyTermToAppMem_loop   ; continue loop

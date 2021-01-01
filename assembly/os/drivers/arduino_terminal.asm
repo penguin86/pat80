@@ -61,17 +61,14 @@ Term_readline:
     ld bc, incoming_string  ; Returns read string pointer
     ret
 
-; Returns the number of bytes available on the parallel port using the 
-; DATA_AVAILABLE register.
-; @return a the number of available bytes
-Term_availb:
-    in a, (TERM_DATA_AVAIL_REG)
-    ret
-
 ; Reads the first available byte on the serial port using the DATA register.
+; Waits for the Terminal DATA_AVAILABLE register to be non-zero before reading.
 ; 0s are not ignored (cannot be used with keyboard)
 ; Affects NO condition bits!
 ; @return the available byte, even if 0
 Term_readb:
+    in a, (TERM_DATA_AVAIL_REG)
+    cp 0
+    jp z, Term_readb
     in a, (TERM_DATA_REG)    ; reads a byte
     ret
