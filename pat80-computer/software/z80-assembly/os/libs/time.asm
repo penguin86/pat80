@@ -9,6 +9,7 @@ TIME_DUR_MILLIS: EQU 3
 ; Use 1 iteration as delay between I/O bus writes
 ; @param bc The number of iterations. Each iteration is 55 states long.
 Time_delay55:
+ret
     bit     0,a    ; 8
     bit     0,a    ; 8
     bit     0,a    ; 8

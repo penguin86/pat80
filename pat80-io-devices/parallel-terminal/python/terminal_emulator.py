@@ -91,9 +91,11 @@ class TerminalEmulator:
             with open(path, "rb") as f:
                 byte = f.read(1)
                 while byte:
+                    # Check if terminal interface (Arduino) is busy
+                    ser.write(b'\x01')  # COMMAND_BUFFER
+                    ser.read()
                     ser.write(byte)
                     byte = f.read(1)
-                    time.sleep(self.SYNC_SLEEP)
         except IOError as e:
             w.move(0,0)
             w.clrtoeol()

@@ -104,4 +104,10 @@ Sysinit:
     ; Run memory monitor
     call Monitor_main
 
+    ; DEBUG: Echo chars
+    ; loop:
+    ;     call Term_readc
+    ;     call Term_printc
+    ;     jp loop
+
     halt
