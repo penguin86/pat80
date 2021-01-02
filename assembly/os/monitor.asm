@@ -21,8 +21,9 @@ MON_COMMAND_ZERO: DB "ZERO",0
 MON_COMMAND_LOAD: DB "LOAD",0
 MON_COMMAND_RUN: DB "RUN",0
 MON_COMMAND_ADB: DB "ADB",0
+MON_COMMAND_QUIT: DB "QUIT",0
 MON_ARG_HEX: DB "    0x",0
-MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nZERO [ADDR] [ADDR] sets all bytes to 0 in the specified range\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge",0
+MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nZERO [ADDR] [ADDR] sets all bytes to 0 in the specified range\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge\nQUIT exits",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
 ;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
@@ -30,6 +31,8 @@ MON_DUMP_BYTES_LINES: EQU 8
 MON_DUMP_BYTES_PER_LINE: EQU 8
 
 Monitor_main:
+	; Disable maskable interrupts. MI are used to break a program execution and bring up immediately the memory monitor.
+	call monitor_disable_int
     ; Print welcome string
     ld bc, MON_WELCOME
     call Sys_Print
@@ -66,6 +69,9 @@ Monitor_main:
         ld hl, MON_COMMAND_ADB
         cp (hl)
         jp z, monitor_adb
+        ld hl, MON_COMMAND_QUIT
+		cp (hl)
+		jp z, monitor_quit
         ; Unrecognized command: print error and beep
         ld bc, MON_ERR_SYNTAX
         call Sys_Print
@@ -79,6 +85,17 @@ monitor_help:
     ld bc, MON_HELP
     call Sys_Print
     jp monitor_main_loop
+
+monitor_quit:
+    ld bc, MON_COMMAND_QUIT + 1 ; autocomplete command
+    call Sys_Print
+	; newline
+	ld a, 10
+	call Sys_Printc
+    ; re-enable interrupts
+	call monitor_enable_int
+	reti ; return from interrupt
+
 
 ; Asks the user for a memory position and shows the following 64 bytes of memory
 ; @uses a, b, c, d, e, h, l
@@ -257,6 +274,7 @@ monitor_zero: ; TODO: bugged, doesn't exit cycle
 monitor_load:
     ld bc, MON_COMMAND_LOAD + 1 ; autocomplete command
     call Sys_Print
+	; TODO: When implemented, re-enable interrupts before run application
     jp monitor_main_loop
 
 monitor_run:
@@ -266,14 +284,20 @@ monitor_run:
     call monitor_arg_2byte  ; returns the read bytes in hl
     ld a, 10 ; newline
     call Sys_Printc
-    jp (hl)    ; Start executing code
+	ld sp, hl ; Point stack pointer to code to execute
+	; re-enable interrupts
+	call monitor_enable_int
+	reti
 
 monitor_adb:
     ld bc, MON_COMMAND_ADB + 1 ; autocomplete command
     call Sys_Print
     ; start copying incoming data to application space
     call monitor_copyTermToAppMem
+	; call monitor_enable_int    ; re-enable interrupts
     ;jp APP_SPACE    ; Start executing code
+
+
     ; ld bc, APP_SPACE
     ; call Sys_Print
     jp monitor_main_loop
@@ -515,5 +539,29 @@ monitor_copyTermToAppMem:
         ld c, a
         dec d
         jp monitor_copyTermToAppMem_loop   ; continue loop
+
+; Restores registers and re-enables interrupt.
+; Enable interrupts: when the BREAK key is pressed, a maskable interrupt is generated and 
+; the CPU jumps to 0x38 reset vector, where if finds a call to Memory monitor (see main.asm).
+; In this way, BREAK key brings up memory monitor at any time.
+; To be called before the user exits from monitor
+monitor_enable_int:
+	; exchange registers
+	exx
+	ex af, af'
+	; enable interrupts
+	ei
+	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
+	ret
+
+; Saves registers and disables interrupts.
+; To be called when the monitor starts
+monitor_disable_int:
+	di ; disable interrupt
+	; exchange registers
+	exx
+	ex af, af'
+	ret
+	
 
 

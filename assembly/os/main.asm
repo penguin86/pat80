@@ -19,9 +19,16 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 ;   I/O 6 (0xC0 - 0xDF)
 ;   I/O 7 (0xE0 - 0xFF)
 
+; **** RESET/INTERRUPT VECTOR ****
+
+; Maskable interrupt mode 1: execute memory monitor
+ds 0x38
+call Monitor_main
+
 ; **** SYSTEM CALLS ****
 ; System calls provide access to low level functions (input from keyboard, output to screen etc).
 ; The name starts always with Sys_
+ds 0x40	; Place system calls after Z80 reset/interrupt subroutines space
 
 ; Returns ABI version.
 ; (ABI -> https://en.wikipedia.org/wiki/Application_binary_interface)
@@ -101,7 +108,12 @@ Sysinit:
     ; Play startup sound
     call Sys_Beep
 
-    ; Run memory monitor
-    call Monitor_main
+	; Run memory monitor
+	ei ; enable maskabpe interrupts
+	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
+	rst 0x38 ; throw fake interrupt: jump to interrupt routine to start monitor
 
-    halt
+	; User exited from memory monitor without loading a program. Do nothing.
+	mloop:
+		; Main loop: do nothing.
+		jp mloop
