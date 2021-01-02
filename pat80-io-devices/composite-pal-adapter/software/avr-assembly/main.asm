@@ -18,11 +18,19 @@ main:
 
 v_refresh_loop:
 	; start 5 long sync pulses
-
+	call long_sync
+	call long_sync
+	call long_sync
+	call long_sync
+	call long_sync
 	; end 5 long sync pulses
 
 	; start 5 short sync pulses
-
+	call short_sync
+	call short_sync
+	call short_sync
+	call short_sync
+	call short_sync
 	; end 5 short sync pulses
 
 	; start 304 picture lines
@@ -79,3 +87,56 @@ v_refresh_loop:
 		dec r16 ; decrement outside counter
 		brne h_picture_outer_loop	; if not 0, repeat h_picture_loop
 	; end picture lines
+
+	; start 6 short sync pulses
+	call short_sync
+	call short_sync
+	call short_sync
+	call short_sync
+	call short_sync
+	; end 6 short sync pulses
+
+	jmp v_refresh_loop
+; end vertical refresh
+
+long_sync:
+	; long sync: 30uS low (719 cycles @ 24Mhz), 2uS high (48 cycles @ 24Mhz)
+	cbi	PORTD, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+
+	ldi r18, 120												; 1 cycle
+	long_sync_low_loop: ; requires 6 cpu cycles
+		nop														; 1 cycle
+		nop														; 1 cycle
+		nop														; 1 cycle
+		dec r18													; 1 cycle
+		brne long_sync_low_loop  								; 2 cycle if true, 1 if false
+
+	sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
+
+	ldi r18, 16													; 1 cycle
+	long_sync_high_loop: ; requires 3 cpu cycles
+		dec r18													; 1 cycle
+		brne long_sync_high_loop  								; 2 cycle if true, 1 if false
+
+	ret
+
+short_sync:
+	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high
+	cbi	PORTD, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+
+	ldi r18, 16													; 1 cycle
+	short_sync_low_loop: ; requires 3 cpu cycles
+		dec r18													; 1 cycle
+		brne long_sync_low_loop  								; 2 cycle if true, 1 if false
+
+	sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
+
+	ldi r18, 120												; 1 cycle
+	short_sync_high_loop: ; requires 6 cpu cycles
+		nop														; 1 cycle
+		nop														; 1 cycle
+		nop														; 1 cycle
+		dec r18													; 1 cycle
+		brne short_sync_high_loop  								; 2 cycle if true, 1 if false
+
+	ret
