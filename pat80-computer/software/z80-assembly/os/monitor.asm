@@ -31,8 +31,6 @@ MON_DUMP_BYTES_LINES: EQU 8
 MON_DUMP_BYTES_PER_LINE: EQU 8
 
 Monitor_main:
-	; Disable maskable interrupts. MI are used to break a program execution and bring up immediately the memory monitor.
-	call monitor_disable_int
     ; Print welcome string
     ld bc, MON_WELCOME
     call Sys_Print
@@ -92,8 +90,14 @@ monitor_quit:
 	; newline
 	ld a, 10
 	call Sys_Printc
-    ; re-enable interrupts
-	call monitor_enable_int
+    ; Restores registers and re-enable interrupts: when the BREAK key is pressed, 
+	; a maskable interrupt is generated and the CPU jumps to 0x38 reset vector, 
+	; where if finds a call to Memory monitor (see main.asm).
+	exx ; exchange registers
+	ex af, af'
+	; enable interrupts
+	ei
+	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
 	reti ; return from interrupt
 
 
@@ -280,14 +284,18 @@ monitor_load:
 monitor_run:
     ld bc, MON_COMMAND_RUN + 1 ; autocomplete command
     call Sys_Print
-    ; Now read the memory address to be changed from the user
+    ; Now read the memory address to be executed from the user
     call monitor_arg_2byte  ; returns the read bytes in hl
     ld a, 10 ; newline
-    call Sys_Printc
-	ld sp, hl ; Point stack pointer to code to execute
-	; re-enable interrupts
-	call monitor_enable_int
-	reti
+    call Sys_Printc	
+	; enable interrupts
+	ei
+	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
+	; pop the last entry on the stack: this is needed (as the monitor
+	; runs in an interrupt) to counter-balance the missing reti statement
+	pop bc
+	; execute code
+	jp (hl)
 
 monitor_adb:
     ld bc, MON_COMMAND_ADB + 1 ; autocomplete command
@@ -540,28 +548,6 @@ monitor_copyTermToAppMem:
         dec d
         jp monitor_copyTermToAppMem_loop   ; continue loop
 
-; Restores registers and re-enables interrupt.
-; Enable interrupts: when the BREAK key is pressed, a maskable interrupt is generated and 
-; the CPU jumps to 0x38 reset vector, where if finds a call to Memory monitor (see main.asm).
-; In this way, BREAK key brings up memory monitor at any time.
-; To be called before the user exits from monitor
-monitor_enable_int:
-	; exchange registers
-	exx
-	ex af, af'
-	; enable interrupts
-	ei
-	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
-	ret
 
-; Saves registers and disables interrupts.
-; To be called when the monitor starts
-monitor_disable_int:
-	di ; disable interrupt
-	; exchange registers
-	exx
-	ex af, af'
-	ret
-	
 
 

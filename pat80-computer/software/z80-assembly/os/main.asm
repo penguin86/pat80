@@ -21,9 +21,14 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 
 ; **** RESET/INTERRUPT VECTOR ****
 
-; Maskable interrupt mode 1: execute memory monitor
+; Maskable interrupt mode 1: when the BREAK key is pressed, 
+; a maskable interrupt is generated and the CPU jumps to this address.
+; In this way, BREAK key brings up memory monitor at any time.
 ds 0x38
-call Monitor_main
+	di ; Disable maskable interrupts.
+	exx ; exchange registers
+	ex af, af'
+	jp Monitor_main
 
 ; **** SYSTEM CALLS ****
 ; System calls provide access to low level functions (input from keyboard, output to screen etc).
