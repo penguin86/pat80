@@ -6,6 +6,7 @@
 ; define constant
 .equ SYNC_PIN = PD7		; Sync pin is on Port D 7 (pin 21)
 .equ VIDEO_PIN = PD6	; Video pin is on Port D 6 (pin 20)
+.equ DEBUG_PIN = PD5	; Video pin is on Port D 5 (pin 19)
 
 ; start vector
 .org 0x0000
@@ -15,6 +16,7 @@
 main:
 	sbi	DDRD, SYNC_PIN		; set pin as output
 	sbi	DDRD, VIDEO_PIN		; set pin as output
+	sbi	DDRD, DEBUG_PIN		; set pin as output
 
 v_refresh_loop:
 	; start 5 long sync pulses
@@ -49,8 +51,6 @@ v_refresh_loop:
 				cbi	PORTD, VIDEO_PIN	; video goes low			 	; 2 cycle
 				brne l_sync_video_loop1  								; 2 cycle if true, 1 if false
 
-			cbi	PORTD, VIDEO_PIN	; video goes low
-
 			ldi r18, 137												; 1 cycle
 			l_sync_video_loop2:
 				dec r18													; 1 cycle
@@ -79,7 +79,13 @@ v_refresh_loop:
 	call short_sync
 	call short_sync
 	call short_sync
+	call short_sync
 	; end 6 short sync pulses
+
+	; debug
+	sbi	PORTD, DEBUG_PIN	; high
+	cbi	PORTD, DEBUG_PIN	; low
+	; debug
 
 	jmp v_refresh_loop
 ; end vertical refresh
@@ -98,7 +104,7 @@ long_sync:
 
 	sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
 
-	ldi r18, 16													; 1 cycle
+	ldi r18, 15													; 1 cycle
 	long_sync_high_loop: ; requires 3 cpu cycles
 		dec r18													; 1 cycle
 		brne long_sync_high_loop  								; 2 cycle if true, 1 if false
@@ -106,13 +112,13 @@ long_sync:
 	ret
 
 short_sync:
-	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high
+	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high (720 cycles @ 24Mhz)
 	cbi	PORTD, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 
-	ldi r18, 16													; 1 cycle
+	ldi r18, 15  												; 1 cycle
 	short_sync_low_loop: ; requires 3 cpu cycles
 		dec r18													; 1 cycle
-		brne long_sync_low_loop  								; 2 cycle if true, 1 if false
+		brne short_sync_low_loop  								; 2 cycle if true, 1 if false
 
 	sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
 
