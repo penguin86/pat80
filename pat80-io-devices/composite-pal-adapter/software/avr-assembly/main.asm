@@ -38,30 +38,15 @@ v_refresh_loop:
 	h_picture_outer_loop:
 		ldi r17, 152	; line counter
 		h_picture_loop:
-			; start line sync: 4uS, 96 cycles @ 24Mhz
-			cbi	PORTD, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-			ldi r18, 32													; 1 cycle
-			l_sync_pulse_loop: ; requires 3 cpu cycles
-				dec r18													; 1 cycle
-				brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
-			sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
-			; end line sync
-
-			; start back porch: 8uS, 192 cycles @ 24Mhz
-			ldi r18, 64													; 1 cycle
-			l_sync_back_porch_loop:
-				dec r18													; 1 cycle
-				brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
-			; end back porch
-
+			call line_sync
 			; start image: 52uS, 1247 cycles @ 24Mhz
 			; 3 bande da 416 cicli
 
-			sbi	PORTD, VIDEO_PIN	; video goes high					; 2 cycle
-
-			ldi r18, 138													; 1 cycle
+			ldi r18, 59													; 1 cycle
 			l_sync_video_loop1:
+				sbi	PORTD, VIDEO_PIN	; video goes high				; 2 cycle
 				dec r18													; 1 cycle
+				cbi	PORTD, VIDEO_PIN	; video goes low			 	; 2 cycle
 				brne l_sync_video_loop1  								; 2 cycle if true, 1 if false
 
 			cbi	PORTD, VIDEO_PIN	; video goes low
@@ -138,5 +123,25 @@ short_sync:
 		nop														; 1 cycle
 		dec r18													; 1 cycle
 		brne short_sync_high_loop  								; 2 cycle if true, 1 if false
+
+	ret
+
+line_sync:
+	; line sync & front porch
+	; start line sync: 4uS, 96 cycles @ 24Mhz
+	cbi	PORTD, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+	ldi r18, 32													; 1 cycle
+	l_sync_pulse_loop: ; requires 3 cpu cycles
+		dec r18													; 1 cycle
+		brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
+	sbi	PORTD, SYNC_PIN	; sync goes high (0.3v)
+	; end line sync
+
+	; start back porch: 8uS, 192 cycles @ 24Mhz
+	ldi r18, 64													; 1 cycle
+	l_sync_back_porch_loop:
+		dec r18													; 1 cycle
+		brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
+	; end back porch
 
 	ret
