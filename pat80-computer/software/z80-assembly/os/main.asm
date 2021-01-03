@@ -117,3 +117,9 @@ Sysinit:
 	mloop:
 		; Main loop: do nothing.
 		jp mloop
+
+    ; DEBUG: Echo chars
+    ; loop:
+    ;     call Term_readc
+    ;     call Term_printc
+    ;     jp loop
