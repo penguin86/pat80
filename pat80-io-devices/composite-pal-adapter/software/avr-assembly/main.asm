@@ -4,6 +4,7 @@
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTD).
 
 .include "atmega1284definition.asm"
+.include "cat2.asm"
 
 ; define constant
 .equ SYNC_PIN = PC0		; Sync pin (pin 22)
@@ -31,26 +32,30 @@ main:
 
 
 
-	;*** Load data into ram ***
-	; Set X to 0x0100
-	ldi r27, 0x01
-	clr r26
+;*** Load data into ram ***
+; Set X to 0x0100
+ldi r27, 0x01
+clr r26
+; Set Z to 0x1000 (cat image)
+ldi r31, 0x10
+clr r30
 
-	ldi r16, 0xFF	; counter
-	load_mem_loop:
-		;mov r17, r26	; use XL as memory content (TODO replace with real content)
-		ldi r17, 0b10101010
-		st X+, r17
-		dec r16 ; decrement outside counter
-		brne load_mem_loop	; if not 0, repeat h_picture_loop
-
-
+load_mem_loop:
+	lpm r17, Z+
+	;ldi r17, 0b00001111
+	st X+, r17
+	; if reached the last framebuffer byte, exit cycle
+	cpi r27, 0b00111110
+	brne load_mem_loop	; if not 0, repeat h_picture_loop
+	cpi r26, 0b11000000
+	brne load_mem_loop	; if not 0, repeat h_picture_loop
 
 
 v_refresh_loop:
 	; set X register to framebuffer start 0x0100
-	ldi r27, 0x01
-	clr r26
+	; (set it a byte before, because it will be incremented at first)
+	clr r27
+	ldi r26, 0xFF
 
 	; start 5 long sync pulses
 	call long_sync
@@ -69,49 +74,74 @@ v_refresh_loop:
 	; end 5 short sync pulses
 
 	; start 304 picture lines
-	ldi r16, 2
-	h_picture_outer_loop:
-		ldi r17, 152	; line counter
-		h_picture_loop:
-			; debug
-			; sbi	PORTC, DEBUG_PIN	; high
-			; cbi	PORTC, DEBUG_PIN	; low
-			; debug
+	ldi r17, 152	; line counter
+	h_picture_loop:
+		; debug
+		; sbi	PORTC, DEBUG_PIN	; high
+		; cbi	PORTC, DEBUG_PIN	; low
+		; debug
 
-			; **** start line sync: 4uS, 96 cycles @ 24Mhz
-			cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
-			cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-			ldi r18, 31													; 1 cycle
-			l_sync_pulse_loop: ; requires 3 cpu cycles
-				dec r18													; 1 cycle
-				brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
-			sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-			; **** end line sync
+		; ***************** DRAW FIRST LINE *********************
+		
+		; **** start line sync: 4uS, 96 cycles @ 24Mhz
+		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+		ldi r18, 31													; 1 cycle
+		l_sync_pulse_loop: ; requires 3 cpu cycles
+			dec r18													; 1 cycle
+			brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; **** end line sync
 
-			; **** start line back porch: 8uS, 192 cycles @ 24Mhz
-			; leave time at the end for line setup and draw_line call
-			ldi r18, 62													; 1 cycle
-			l_sync_back_porch_loop:
-				dec r18													; 1 cycle
-				brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
-			; **** end back porch
+		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
+		; leave time at the end for line setup and draw_line call
+		ldi r18, 62													; 1 cycle
+		l_sync_back_porch_loop:
+			dec r18													; 1 cycle
+			brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
+		; **** end back porch
 
-			jmp draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
-			; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
-			on_line_drawn:
+		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
+		; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
 
-			; debug
-			; sbi	PORTC, DEBUG_PIN	; high
-			; cbi	PORTC, DEBUG_PIN	; low
-			; debug
 
-			dec r17 ; decrement line countr								; 1 cycle
-			brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
 
-		dec r16 ; decrement outside counter								; 1 cycle
-		brne h_picture_outer_loop	; if not 0, repeat h_picture_loop	; 2 cycle if true, 1 if false
+		; ***************** DRAW SECOND LINE *********************
+		
+		; **** start line sync: 4uS, 96 cycles @ 24Mhz
+		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+		ldi r18, 31													; 1 cycle
+		l_sync_pulse_loop2: ; requires 3 cpu cycles
+			dec r18													; 1 cycle
+			brne l_sync_pulse_loop2  								; 2 cycle if true, 1 if false
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; **** end line sync
+
+		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
+		; leave time at the end for line setup and draw_line call
+		ldi r18, 62													; 1 cycle
+		l_sync_back_porch_loop2:
+			dec r18													; 1 cycle
+			brne l_sync_back_porch_loop2  							; 2 cycle if true, 1 if false
+		; **** end back porch
+
+		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
+		; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
+
+
+
+
+		; debug
+		; sbi	PORTC, DEBUG_PIN	; high
+		; cbi	PORTC, DEBUG_PIN	; low
+		; debug
+
+		dec r17 ; decrement line countr								; 1 cycle
+		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
 	; end picture lines
 
+	cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
 	; start 6 short sync pulses
 	call short_sync
 	call short_sync
@@ -1476,5 +1506,4 @@ draw_line:
 	lsl r19						; 1 cycle
 	out PORTD, r19				; 1 cycle
 
-	; return
-	jmp on_line_drawn			; 3 cycle
+	ret
