@@ -1,5 +1,7 @@
 ; VIDEO COMPOSITE PAL IO DEVICE
 ; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
+; Every line, for 52 times, it loads a byte from memory into PORTD register and then shifts the byte to the left to show another bit (do it 7 times)
+; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTD).
 
 .include "atmega1284definition.asm"
 
@@ -23,16 +25,22 @@ main:
 	out DDRD, r16			; set port as output
 
 	
+
+
+
+
+
+
 	;*** Load data into ram ***
-	;ldi r27, 0x01
-	;ldi r26, 0x00
-	; load data
-	ldi r16, 255
+	; Set X to 0x0100
+	ldi r27, 0x01
+	clr r26
+
+	ldi r16, 0xFF	; counter
 	load_mem_loop:
-		ldi r17, 1
-		;sts X, r17
-		sts 0x0100, r17
-		adiw XH:XL, 1	; increment X
+		;mov r17, r26	; use XL as memory content (TODO replace with real content)
+		ldi r17, 0b10101010
+		st X+, r17
 		dec r16 ; decrement outside counter
 		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
@@ -40,17 +48,9 @@ main:
 
 
 v_refresh_loop:
-	; reset memory position counter
-	; ldi r16,0x00
-	; mov r0,r16
-	; ldi r16,0x01
-	; mov r1,r16
-	; mov XL,r0
-	; mov XH,r1
-
-	; set X register to framebuffer start
-	; ldi r27, 0x01
-	; ldi r26, 0x00
+	; set X register to framebuffer start 0x0100
+	ldi r27, 0x01
+	clr r26
 
 	; start 5 long sync pulses
 	call long_sync
@@ -73,44 +73,43 @@ v_refresh_loop:
 	h_picture_outer_loop:
 		ldi r17, 152	; line counter
 		h_picture_loop:
-			call line_sync
-			; start line pixels: 52uS, 1248 cycles @ 24Mhz
-			ldi r18, 52													; 1 cycle
-			l_sync_video_loop:	; 24 cycles
-				; Load a byte from memory into PORTD register and increment the counter.
-				; This also displays byte's MSB pixel "for free", as the video pin is PD7
-				; (last bit of PORTD).
-				lds r19, 0x0100					; 2 cycles
-				out PORTD, r19				; 1 cycle
-				; Shift the byte to the left to show another bit (do it 7 times)
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop							; 1 cycle
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop							; 1 cycle
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop							; 1 cycle
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop							; 1 cycle
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop							; 1 cycle
-				rol r19						; 1 cycle
-				out PORTD, r19				; 1 cycle
-				nop						; 1 cycle
-				dec r18						; 1 cycle
-				brne l_sync_video_loop		; 2 cycles if jumps (1 if continues)
-			; end line pixels
+			; debug
+			; sbi	PORTC, DEBUG_PIN	; high
+			; cbi	PORTC, DEBUG_PIN	; low
+			; debug
 
-			cbi PORTD, VIDEO_PIN	; video pin goes low before sync
-			dec r17 ; decrement line countr
-			brne h_picture_loop	; if not 0, repeat h_picture_loop
+			; **** start line sync: 4uS, 96 cycles @ 24Mhz
+			cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+			cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+			ldi r18, 31													; 1 cycle
+			l_sync_pulse_loop: ; requires 3 cpu cycles
+				dec r18													; 1 cycle
+				brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
+			sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+			; **** end line sync
 
-		dec r16 ; decrement outside counter
-		brne h_picture_outer_loop	; if not 0, repeat h_picture_loop
+			; **** start line back porch: 8uS, 192 cycles @ 24Mhz
+			; leave time at the end for line setup and draw_line call
+			ldi r18, 62													; 1 cycle
+			l_sync_back_porch_loop:
+				dec r18													; 1 cycle
+				brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
+			; **** end back porch
+
+			jmp draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
+			; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
+			on_line_drawn:
+
+			; debug
+			; sbi	PORTC, DEBUG_PIN	; high
+			; cbi	PORTC, DEBUG_PIN	; low
+			; debug
+
+			dec r17 ; decrement line countr								; 1 cycle
+			brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
+
+		dec r16 ; decrement outside counter								; 1 cycle
+		brne h_picture_outer_loop	; if not 0, repeat h_picture_loop	; 2 cycle if true, 1 if false
 	; end picture lines
 
 	; start 6 short sync pulses
@@ -123,8 +122,8 @@ v_refresh_loop:
 	; end 6 short sync pulses
 
 	; debug
-	sbi	PORTC, DEBUG_PIN	; high
-	cbi	PORTC, DEBUG_PIN	; low
+	; sbi	PORTC, DEBUG_PIN	; high
+	; cbi	PORTC, DEBUG_PIN	; low
 	; debug
 
 	jmp v_refresh_loop
@@ -172,22 +171,1310 @@ short_sync:
 
 	ret
 
-line_sync:
-	; line sync & front porch
-	; start line sync: 4uS, 96 cycles @ 24Mhz
-	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-	ldi r18, 32													; 1 cycle
-	l_sync_pulse_loop: ; requires 3 cpu cycles
-		dec r18													; 1 cycle
-		brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
-	sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-	; end line sync
 
-	; start back porch: 8uS, 192 cycles @ 24Mhz
-	ldi r18, 64													; 1 cycle
-	l_sync_back_porch_loop:
-		dec r18													; 1 cycle
-		brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
-	; end back porch
+draw_line:
+	; NO loops, as this is time-strict
+	; 52 chunks of 8 pixels
 
-	ret
+	; chunk 1
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 2
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 3
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 4
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 5
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 6
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 7
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 8
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 9
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 10
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 11
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 12
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 13
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 14
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 15
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 16
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 17
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 18
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 19
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 20
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 21
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 22
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 23
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 24
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 25
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 26
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 27
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 28
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 29
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 30
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 31
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 32
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 33
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 34
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 35
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 36
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 37
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 38
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 39
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 40
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 41
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 42
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 43
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 44
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 45
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 46
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 47
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 48
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 49
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 50
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 51
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; chunk 52
+	ld r19, X+	; load pixel	; 2 cycles
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+	nop							; 1 cycle
+	lsl r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
+
+	; return
+	jmp on_line_drawn			; 3 cycle
