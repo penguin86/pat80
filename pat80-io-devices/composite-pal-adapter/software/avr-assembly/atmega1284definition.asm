@@ -1,3 +1,11 @@
+; ***** CPU REGISTER DEFINITIONS *****************************************
+.def	XH	= r27
+.def	XL	= r26
+.def	YH	= r29
+.def	YL	= r28
+.def	ZH	= r31
+.def	ZL	= r30
+
 ; ***** I/O REGISTER DEFINITIONS *****************************************
 ; NOTE:
 ; Definitions marked "MEMORY MAPPED"are extended I/O ports

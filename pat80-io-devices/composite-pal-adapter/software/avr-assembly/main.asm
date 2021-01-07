@@ -23,32 +23,34 @@ main:
 	out DDRD, r16			; set port as output
 
 	
-	; Load ram addr into register X
-	ldi r16,0x00
-	mov r0,r16
-	ldi r16,0x01
-	mov r1,r16
-	mov XL,r0
-	mov XH,r1
+	;*** Load data into ram ***
+	;ldi r27, 0x01
+	;ldi r26, 0x00
+	; load data
+	ldi r16, 255
+	load_mem_loop:
+		ldi r17, 1
+		;sts X, r17
+		sts 0x0100, r17
+		adiw XH:XL, 1	; increment X
+		dec r16 ; decrement outside counter
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
-	; DEBUG: loads some static data in ram
-	ldi r18, 255
-	fill_mem_loop1:
-		st X+, r18
-		dec r18
-		brne fill_mem_loop1
-	; END DEBUG
+
+
 
 v_refresh_loop:
 	; reset memory position counter
-	;ldi XL, 0x00
-	;ldi XH, 0x01
-	ldi r16,0x00
-	mov r0,r16
-	ldi r16,0x01
-	mov r1,r16
-	mov XL,r0
-	mov XH,r1
+	; ldi r16,0x00
+	; mov r0,r16
+	; ldi r16,0x01
+	; mov r1,r16
+	; mov XL,r0
+	; mov XH,r1
+
+	; set X register to framebuffer start
+	; ldi r27, 0x01
+	; ldi r26, 0x00
 
 	; start 5 long sync pulses
 	call long_sync
@@ -72,43 +74,39 @@ v_refresh_loop:
 		ldi r17, 152	; line counter
 		h_picture_loop:
 			call line_sync
-			; start line pixels: 52uS, 1247 cycles @ 24Mhz
+			; start line pixels: 52uS, 1248 cycles @ 24Mhz
 			ldi r18, 52													; 1 cycle
 			l_sync_video_loop:	; 24 cycles
 				; Load a byte from memory into PORTD register and increment the counter.
 				; This also displays byte's MSB pixel "for free", as the video pin is PD7
 				; (last bit of PORTD).
-				;ld r19, X+					; 2 cycles
-				
-				ld r19, X					; 1 cycle
-				nop
-
+				lds r19, 0x0100					; 2 cycles
 				out PORTD, r19				; 1 cycle
 				; Shift the byte to the left to show another bit (do it 7 times)
-				lsl r19						; 1 cycle
-				out PORTD, r19
-				nop
-				lsl r19						; 1 cycle
-				out PORTD, r19
-				nop
-				lsl r19						; 1 cycle
-				out PORTD, r19
-				nop
-				lsl r19						; 1 cycle
-				out PORTD, r19
-				nop
-				lsl r19						; 1 cycle
-				out PORTD, r19
-				nop
-				lsl r19						; 1 cycle
-				out PORTD, r19
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
 				nop							; 1 cycle
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
+				nop							; 1 cycle
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
+				nop							; 1 cycle
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
+				nop							; 1 cycle
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
+				nop							; 1 cycle
+				rol r19						; 1 cycle
+				out PORTD, r19				; 1 cycle
+				nop						; 1 cycle
 				dec r18						; 1 cycle
-				brne l_sync_video_loop			; 2 cycles if jumps (1 if continues)
+				brne l_sync_video_loop		; 2 cycles if jumps (1 if continues)
 			; end line pixels
 
 			cbi PORTD, VIDEO_PIN	; video pin goes low before sync
-			dec r17 ; decrement line counter
+			dec r17 ; decrement line countr
 			brne h_picture_loop	; if not 0, repeat h_picture_loop
 
 		dec r16 ; decrement outside counter
