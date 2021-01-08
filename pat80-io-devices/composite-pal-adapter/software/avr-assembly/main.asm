@@ -2,12 +2,16 @@
 ; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
 ; Every line, for 52 times, it loads a byte from memory into PORTD register and then shifts the byte to the left to show another bit (do it 7 times)
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTD).
+;
+; PINS:
+; Video pin: PD0 (pin 14)
+; Sync pin: PC0 (pin 22)
+; Debug hsync pin: PC1 (pin 23)
 
 .include "atmega1284definition.asm"
 
 ; define constant
 .equ SYNC_PIN = PC0		; Sync pin (pin 22)
-.equ VIDEO_PIN = PD7	; Video pin (pin 21)
 .equ DEBUG_PIN = PC1	; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
 
 ; memory
@@ -22,9 +26,7 @@ main:
 	sbi	DDRC, SYNC_PIN		; set pin as output
 	sbi	DDRC, DEBUG_PIN		; set pin as output
 	ldi	r16, 0xFF
-	out DDRD, r16			; set port as output
-
-	
+	out DDRD, r16			; set port as output (contains video pin)
 
 
 
@@ -84,7 +86,10 @@ v_refresh_loop:
 		; ***************** DRAW FIRST LINE *********************
 
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
-		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+		; video pin goes low before sync
+		clr r19						; 1 cycle
+		out PORTD, r19				; 1 cycle
+		
 		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 		ldi r18, 31													; 1 cycle
 		l_sync_pulse_loop: ; requires 3 cpu cycles
@@ -109,7 +114,10 @@ v_refresh_loop:
 		; ***************** DRAW SECOND LINE *********************
 
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
-		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+		; video pin goes low before sync
+		clr r19						; 1 cycle
+		out PORTD, r19				; 1 cycle
+
 		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 		ldi r18, 31													; 1 cycle
 		l_sync_pulse_loop2: ; requires 3 cpu cycles
@@ -141,7 +149,9 @@ v_refresh_loop:
 		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
 	; end picture lines
 
-	cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
+	; video pin goes low before sync
+	clr r19						; 1 cycle
+	out PORTD, r19				; 1 cycle
 	; start 6 short sync pulses
 	call short_sync
 	call short_sync
@@ -1509,4 +1519,4 @@ draw_line:
 	ret
 
 
-.include "cat.asm"
+.include "cat2.asm"
