@@ -4,7 +4,6 @@
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTD).
 
 .include "atmega1284definition.asm"
-.include "cat2.asm"
 
 ; define constant
 .equ SYNC_PIN = PC0		; Sync pin (pin 22)
@@ -34,11 +33,12 @@ main:
 
 ;*** Load data into ram ***
 ; Set X to 0x0100
-ldi r27, 0x01
-clr r26
+ldi r27, high(FRAMEBUFFER<<1)
+ldi r26, low(FRAMEBUFFER<<1)
 ; Set Z to 0x1000 (cat image)
-ldi r31, 0x10
-clr r30
+ldi r31, high(CAT_IMAGE<<1)
+ldi r30, low(CAT_IMAGE<<1)
+
 
 load_mem_loop:
 	lpm r17, Z+
@@ -82,7 +82,7 @@ v_refresh_loop:
 		; debug
 
 		; ***************** DRAW FIRST LINE *********************
-		
+
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
 		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
 		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
@@ -107,7 +107,7 @@ v_refresh_loop:
 
 
 		; ***************** DRAW SECOND LINE *********************
-		
+
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
 		cbi PORTD, VIDEO_PIN	; video pin goes low before sync	; 2 cycles
 		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
@@ -1507,3 +1507,6 @@ draw_line:
 	out PORTD, r19				; 1 cycle
 
 	ret
+
+
+.include "cat.asm"
