@@ -16,6 +16,17 @@
 ; Video pin: PA0 (pin 1)
 ; Sync pin: PC0 (pin 22)
 ; Debug hsync pin: PC1 (pin 23)
+;
+; RESERVED REGISTERS:
+; R25: Current status (what the interrupt should do when fired):
+;	0, 2, 4, 6, 8 = long sync start (sync pin low and register next interrupt after 30uS)
+;	1, 3, 5, 7, 9 = long sync end (sync pin high and register next interrupt after 2uS)
+;	10, 12, 14, 16, 18 = short sync start (sync pin low and register next interrupt after 2uS)
+;	11, 13, 15, 17, 19 = short sync end (sync pin high and register next interrupt after 30uS)
+;	20 = draw lines (draw 304 lines complete with line sync and back porch, then start short
+;		sync: sync pin low and next interrupt after 2uS)
+;	21, 23, 25, 27, 29 = short sync start (sync pin low and register next interrupt after 2uS)
+;	22, 24, 26, 28, 30 = short sync end (sync pin high, reset R25 to 0 and register next interrupt after 30uS)
 
 .include "atmega1284definition.asm"
 
@@ -29,37 +40,46 @@
 ; start vector
 .org 0x0000
 	rjmp	main			; jump to main label
+.org 0x0002
+	rjmp	on_int0			; interrupt 0
 
 ; main program
 main:
+	; setup
 	sbi	DDRC, SYNC_PIN		; set pin as output
 	sbi	DDRC, DEBUG_PIN		; set pin as output
 	ldi	r16, 0xFF
 	out DDRA, r16			; set port as output (contains video pin)
 
 
+	;*** Load data into ram ***
+	; Set X to 0x0100
+	ldi r27, high(FRAMEBUFFER<<1)
+	ldi r26, low(FRAMEBUFFER<<1)
+	; Set Z to 0x1000 (cat image)
+	ldi r31, high(CAT_IMAGE<<1)
+	ldi r30, low(CAT_IMAGE<<1)
+
+	load_mem_loop:
+		lpm r17, Z+
+		;ldi r17, 0b00001111
+		st X+, r17
+		; if reached the last framebuffer byte, exit cycle
+		cpi r27, 0b00111110
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+		cpi r26, 0b11000000
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+
+	; loop forever
+	forever:
+		jmp forever
 
 
+; ********* FUNCTIONS CALLED BY INTERRUPT ***********
 
+on_int0:
+	; called two times per line (every 32 uS) during hsync. Disabled while drawing picture.
 
-;*** Load data into ram ***
-; Set X to 0x0100
-ldi r27, high(FRAMEBUFFER<<1)
-ldi r26, low(FRAMEBUFFER<<1)
-; Set Z to 0x1000 (cat image)
-ldi r31, high(CAT_IMAGE<<1)
-ldi r30, low(CAT_IMAGE<<1)
-
-
-load_mem_loop:
-	lpm r17, Z+
-	;ldi r17, 0b00001111
-	st X+, r17
-	; if reached the last framebuffer byte, exit cycle
-	cpi r27, 0b00111110
-	brne load_mem_loop	; if not 0, repeat h_picture_loop
-	cpi r26, 0b11000000
-	brne load_mem_loop	; if not 0, repeat h_picture_loop
 
 
 v_refresh_loop:
