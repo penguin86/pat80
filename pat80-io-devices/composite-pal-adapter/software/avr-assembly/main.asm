@@ -5,7 +5,7 @@
 ;
 ; INTERFACING WITH PAT80:
 ; Use PortB as data port. Before writing anything, issue a read (pin RW HIGH) and check the busy pin on the data port. 
-; If the busy pin is high, retry reading until goes low. When the busy pin goes low, we have 
+; If the busy pin is high, retry reading until goes low. When the busy pin goes low, we have... TODO
 ;
 ; ELECTRONICALLY:
 ; The data port D0 (= PB0) is tied to ground with a 1KOhm resistance. When the MC is busy drawing the screen, the data port is in
@@ -19,20 +19,20 @@
 ;
 ; RESERVED REGISTERS:
 ; R25: Current status (what the interrupt should do when fired):
-;	0, 2, 4, 6, 8 = long sync start (sync pin low and register next interrupt after 30uS)
-;	1, 3, 5, 7, 9 = long sync end (sync pin high and register next interrupt after 2uS)
-;	10, 12, 14, 16, 18 = short sync start (sync pin low and register next interrupt after 2uS)
-;	11, 13, 15, 17, 19 = short sync end (sync pin high and register next interrupt after 30uS)
-;	20 = draw lines (draw 304 lines complete with line sync and back porch, then start short
+;	0, 1, 2, 3, 4 = long sync
+;	5, 6, 7, 8, 9 = short sync
+;	10 = draw lines (draw 304 lines complete with line sync and back porch, then start short
 ;		sync: sync pin low and next interrupt after 2uS)
-;	21, 23, 25, 27, 29 = short sync start (sync pin low and register next interrupt after 2uS)
-;	22, 24, 26, 28, 30 = short sync end (sync pin high, reset R25 to 0 and register next interrupt after 30uS)
+;	11, 12, 13, 14, 15, 16 = short sync
+;	17-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
 
 .include "atmega1284definition.asm"
 
 ; define constant
-.equ SYNC_PIN = PC0		; Sync pin (pin 22)
-.equ DEBUG_PIN = PC1	; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
+.equ SYNC_PIN = PC0			; Sync pin (pin 22)
+.equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
+.equ TIMER_DELAY_30US = 65536 - 719 	; 719 cycles @ 24Mhz
+.equ TIMER_DELAY_2US = 65536 - 48		; 48 cycles @ 24Mhz
 
 ; memory
 .equ FRAMEBUFFER = 0x100
@@ -40,12 +40,12 @@
 ; start vector
 .org 0x0000
 	rjmp	main			; jump to main label
-.org 0x0002
-	rjmp	on_int0			; interrupt 0
+.org 0x0012
+	rjmp	on_int1			; interrupt for timer 1 overflow
 
 ; main program
 main:
-	; setup
+	; pins setup
 	sbi	DDRC, SYNC_PIN		; set pin as output
 	sbi	DDRC, DEBUG_PIN		; set pin as output
 	ldi	r16, 0xFF
@@ -70,39 +70,56 @@ main:
 		cpi r26, 0b11000000
 		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
+	; timer setup (use 16-bit counter TC1)
+	; The Power Reduction TC1 and TC3 bits in the Power Reduction Registers (PRR0.PRTIM1 and
+	; PRR1.PRTIM3) must be written to zero to enable the TC1 and TC3 module.
+	ldi r16, 0b00001000
+	sts	PRR0, r16
+	ldi r16, 0b00000001
+	sts	PRR1, r16
+	; Set TCNT1 (timer counter) to 0xFF00 (the timer will trigger soon)
+	ser	r27
+	sts	TCNT1H,r27
+	clr r26
+	sts	TCNT1L,r26
+	; Set prescaler to 1:1 (TCCR1B is XXXXX001)
+	ldi r16, 0b00000001
+	sts	TCCR1B, r16
+	; Enable timer1 overflow interrupt(TOIE1): the interrupt 1 will be fired when timer resets
+	ldi r16, 0b00000100
+	sts	TIMSK1, r16
+	; The Global Interrupt Enable bit must be set for the interrupts to be enabled.
+	ldi r16, 0b10000000
+	sts	SREG, r16
+
 	; loop forever
 	forever:
 		jmp forever
 
 
 ; ********* FUNCTIONS CALLED BY INTERRUPT ***********
+on_int1:
+	; called by timer 1 two times per line (every 32 uS) during hsync. Disabled while drawing picture.
+	
+	; if r25 >= 32 then r25=0
+	cpi r25, 32
+	brlt switch_status
+	clr r25
+	; check status and decide what to do
+	switch_status:
+		cpi r25, 5
+		brlt long_sync	; 0-4: long sync
+		cpi r25, 10	; 5-9: short sync
+		breq draw_picture ; 10: draw picture
+		jmp short_sync ; 11-16: short_sync
 
-on_int0:
-	; called two times per line (every 32 uS) during hsync. Disabled while drawing picture.
-
-
-
-v_refresh_loop:
+draw_picture:
+	; increment status
+	inc r25
 	; set X register to framebuffer start 0x0100
 	; (set it a byte before, because it will be incremented at first)
 	clr r27
 	ldi r26, 0xFF
-
-	; start 5 long sync pulses
-	call long_sync
-	call long_sync
-	call long_sync
-	call long_sync
-	call long_sync
-	; end 5 long sync pulses
-
-	; start 5 short sync pulses
-	call short_sync
-	call short_sync
-	call short_sync
-	call short_sync
-	call short_sync
-	; end 5 short sync pulses
 
 	; start 304 picture lines
 	ldi r17, 152	; line counter
@@ -181,64 +198,74 @@ v_refresh_loop:
 	; video pin goes low before sync
 	clr r19						; 1 cycle
 	out PORTA, r19				; 1 cycle
-	; start 6 short sync pulses
-	call short_sync
-	call short_sync
-	call short_sync
-	call short_sync
-	call short_sync
-	call short_sync
-	; end 6 short sync pulses
-
+	
 	; debug
 	; sbi	PORTC, DEBUG_PIN	; high
 	; cbi	PORTC, DEBUG_PIN	; low
 	; debug
 
-	jmp v_refresh_loop
-; end vertical refresh
+
+	; immediately start first end-screen short sync
+	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+	; set timer in 2uS:
+	ldi r27, high(TIMER_DELAY_2US<<1)
+	ldi r26, low(TIMER_DELAY_2US<<1)
+	sts	TCNT1H,r27
+	sts	TCNT1L,r26
+
+	reti
+; end draw_picture
 
 long_sync:
 	; long sync: 30uS low (719 cycles @ 24Mhz), 2uS high (48 cycles @ 24Mhz)
+	inc r25	; increment status counter
+
+	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
+	jmp long_sync_end
+	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+	; set timer in 30uS (reset timer counter)
+	ldi r27, high(TIMER_DELAY_30US<<1)
+	ldi r26, low(TIMER_DELAY_30US<<1)
+	sts	TCNT1H,r27
+	sts	TCNT1L,r26
+	reti
+	
+	long_sync_end:
+		; sync pin is low (sync is occuring)
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; set timer in 2uS:
+		ldi r27, high(TIMER_DELAY_2US<<1)
+		ldi r26, low(TIMER_DELAY_2US<<1)
+		sts	TCNT1H,r27
+		sts	TCNT1L,r26
+		reti
 
-	ldi r18, 120												; 1 cycle
-	long_sync_low_loop: ; requires 6 cpu cycles
-		nop														; 1 cycle
-		nop														; 1 cycle
-		nop														; 1 cycle
-		dec r18													; 1 cycle
-		brne long_sync_low_loop  								; 2 cycle if true, 1 if false
-
-	sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-
-	ldi r18, 15													; 1 cycle
-	long_sync_high_loop: ; requires 3 cpu cycles
-		dec r18													; 1 cycle
-		brne long_sync_high_loop  								; 2 cycle if true, 1 if false
-
-	ret
 
 short_sync:
 	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high (720 cycles @ 24Mhz)
+	inc r25	; increment status counter
+
+	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
+	jmp short_sync_end
+	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-
-	ldi r18, 15  												; 1 cycle
-	short_sync_low_loop: ; requires 3 cpu cycles
-		dec r18													; 1 cycle
-		brne short_sync_low_loop  								; 2 cycle if true, 1 if false
-
-	sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-
-	ldi r18, 120												; 1 cycle
-	short_sync_high_loop: ; requires 6 cpu cycles
-		nop														; 1 cycle
-		nop														; 1 cycle
-		nop														; 1 cycle
-		dec r18													; 1 cycle
-		brne short_sync_high_loop  								; 2 cycle if true, 1 if false
-
-	ret
+	; set timer in 2uS (reset timer counter)
+	ldi r27, high(TIMER_DELAY_2US<<1)
+	ldi r26, low(TIMER_DELAY_2US<<1)
+	sts	TCNT1H,r27
+	sts	TCNT1L,r26
+	reti
+	
+	short_sync_end:
+		; sync pin is low (sync is occuring)
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; set timer in 30uS:
+		ldi r27, high(TIMER_DELAY_30US<<1)
+		ldi r26, low(TIMER_DELAY_30US<<1)
+		sts	TCNT1H,r27
+		sts	TCNT1L,r26
+		reti
 
 
 draw_line:
