@@ -85,8 +85,11 @@ main:
 	; Set prescaler to 1:1 (TCCR1B is XXXXX001)
 	ldi r16, 0b00000001
 	sts	TCCR1B, r16
+	; Clear pending interrupts
+	ldi r16, 0b00000001
+	out TIFR1,r16
 	; Enable timer1 overflow interrupt(TOIE1): the interrupt 1 will be fired when timer resets
-	ldi r16, 0b00000100
+	ldi r16, 0b00000001
 	sts	TIMSK1, r16
 	; The Global Interrupt Enable bit must be set for the interrupts to be enabled.
 	ldi r16, 0b10000000
