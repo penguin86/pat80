@@ -3,6 +3,15 @@
 ; Every line, for 52 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
 ;
+; INTERFACING WITH PAT80:
+; Use PortB as data port. Before writing anything, issue a read (pin RW HIGH) and check the busy pin on the data port. 
+; If the busy pin is high, retry reading until goes low. When the busy pin goes low, we have 
+;
+; ELECTRONICALLY:
+; The data port D0 (= PB0) is tied to ground with a 1KOhm resistance. When the MC is busy drawing the screen, the data port is in
+; high impedance state, so that avoids causing bus contention, but when read returns a 0bXXXXXXX0 byte. When the MC starts vsync,
+; begins checking the port for data... TODO
+;
 ; PINS:
 ; Video pin: PA0 (pin 1)
 ; Sync pin: PC0 (pin 22)
