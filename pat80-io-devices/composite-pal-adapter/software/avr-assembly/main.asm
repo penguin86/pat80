@@ -26,7 +26,7 @@
 ;	11, 12, 13, 14, 15, 16 = short sync
 ;	17-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
 
-.include "atmega1284definition.asm"
+.include "m1284def.inc"
 
 ; define constant
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
