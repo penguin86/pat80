@@ -39,10 +39,11 @@
 
 ; start vector
 .org 0x0000
-	rjmp	main			; jump to main label
-.org 0x0012
-	rjmp	on_int1			; interrupt for timer 1 overflow
+	rjmp	main			; reset vector: jump to main label
+.org 0x001E
+	rjmp	on_tim1_ovf		; interrupt for timer 1 overflow
 
+.org 0x40
 ; main program
 main:
 	; pins setup
@@ -52,7 +53,7 @@ main:
 	out DDRA, r16			; set port as output (contains video pin)
 
 
-	;*** Load data into ram ***
+	; *** Load data into ram ***
 	; Set X to 0x0100
 	ldi r27, high(FRAMEBUFFER<<1)
 	ldi r26, low(FRAMEBUFFER<<1)
@@ -70,27 +71,20 @@ main:
 		cpi r26, 0b11000000
 		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
-	; timer setup (use 16-bit counter TC1)
+	; *** timer setup (use 16-bit counter TC1) ***
 	; The Power Reduction TC1 and TC3 bits in the Power Reduction Registers (PRR0.PRTIM1 and
 	; PRR1.PRTIM3) must be written to zero to enable the TC1 and TC3 module.
-	ldi r16, 0b00001000
+	ldi r16, 0b00000000
 	sts	PRR0, r16
-	ldi r16, 0b00000001
-	sts	PRR1, r16
-	; Set TCNT1 (timer counter) to 0xFF00 (the timer will trigger soon)
-	ser	r27
-	sts	TCNT1H,r27
-	clr r26
-	sts	TCNT1L,r26
-	; Set prescaler to 1:1 (TCCR1B is XXXXX001)
-	ldi r16, 0b00000001
-	sts	TCCR1B, r16
-	; Enable timer1 overflow interrupt(TOIE1): the interrupt 1 will be fired when timer resets
-	ldi r16, 0b00000100
-	sts	TIMSK1, r16
-	; The Global Interrupt Enable bit must be set for the interrupts to be enabled.
-	ldi r16, 0b10000000
-	sts	SREG, r16
+	; Set timer prescaler to 1:1
+    LDI r16,0b00000001
+    sts TCCR1B,r16
+	; Enambe timer1 overflow interrupt
+    LDI r16,0b00000001
+    STS TIMSK1,r16
+	; Enable interrupts globally
+    SEI
+	; Timer setup completed.
 
 	; loop forever
 	forever:
@@ -98,9 +92,9 @@ main:
 
 
 ; ********* FUNCTIONS CALLED BY INTERRUPT ***********
-on_int1:
-	; called by timer 1 two times per line (every 32 uS) during hsync. Disabled while drawing picture.
-	
+on_tim1_ovf:
+	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
+
 	; if r25 >= 32 then r25=0
 	cpi r25, 32
 	brlt switch_status
@@ -112,6 +106,7 @@ on_int1:
 		cpi r25, 10	; 5-9: short sync
 		breq draw_picture ; 10: draw picture
 		jmp short_sync ; 11-16: short_sync
+	; reti is at end of all previous jumps
 
 draw_picture:
 	; increment status
@@ -135,7 +130,7 @@ draw_picture:
 		; video pin goes low before sync
 		clr r19						; 1 cycle
 		out PORTA, r19				; 1 cycle
-		
+
 		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 		ldi r18, 31													; 1 cycle
 		l_sync_pulse_loop: ; requires 3 cpu cycles
@@ -198,7 +193,7 @@ draw_picture:
 	; video pin goes low before sync
 	clr r19						; 1 cycle
 	out PORTA, r19				; 1 cycle
-	
+
 	; debug
 	; sbi	PORTC, DEBUG_PIN	; high
 	; cbi	PORTC, DEBUG_PIN	; low
@@ -230,7 +225,7 @@ long_sync:
 	sts	TCNT1H,r27
 	sts	TCNT1L,r26
 	reti
-	
+
 	long_sync_end:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
@@ -256,7 +251,7 @@ short_sync:
 	sts	TCNT1H,r27
 	sts	TCNT1L,r26
 	reti
-	
+
 	short_sync_end:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
