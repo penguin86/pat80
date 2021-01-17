@@ -19,12 +19,12 @@
 ;
 ; STATUS TABLE:
 ; R25 (STATUS): Current status (what the interrupt should do when fired):
-;	0, 1, 2, 3, 4 = long sync
-;	5, 6, 7, 8, 9 = short sync
-;	10 = draw lines (draw 304 lines complete with line sync and back porch, then start short
+;	0-9 = long sync
+;	10-19 = short sync
+;	20 = draw lines (draw 304 lines complete with line sync and back porch, then start short
 ;		sync: sync pin low and next interrupt after 2uS)
-;	11, 12, 13, 14, 15, 16 = short sync
-;	17-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
+;	21-32 = short sync
+;	33-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
 
 .include "m1284def.inc"
 
@@ -35,8 +35,8 @@
 ; define constant
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
 .equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
-.equ TIMER_DELAY_30US = 65535 - 704 	; 719 cycles @ 24Mhz
-.equ TIMER_DELAY_2US = 65535 - 47		; 48 cycles @ 24Mhz
+.equ TIMER_DELAY_30US = 65535 - 690 	; 719 cycles @ 24Mhz (minus overhead)
+.equ TIMER_DELAY_2US = 65535 - 17		; 48 cycles @ 24Mhz (minus overhead)
 
 ; memory
 .equ FRAMEBUFFER = 0x100
@@ -113,23 +113,21 @@ on_tim1_ovf:
 
 
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
-
-	; if STATUS >= 17 then STATUS=0
-	cpi STATUS, 17
+	inc STATUS
+	; if STATUS >= 33 then STATUS=0
+	cpi STATUS, 33
 	brlo switch_status
 	clr STATUS
 	; check status and decide what to do
 	switch_status:
-		cpi STATUS, 5
-		brlo long_sync	; 0-4: long sync
-		cpi STATUS, 10	; 5-9: short sync
-		breq draw_picture ; 10: draw picture
-		jmp short_sync ; 11-16: short_sync
+		cpi STATUS, 10
+		brlo long_sync	; 0-9: long sync
+		cpi STATUS, 20
+		breq draw_picture ; 20: draw picture
+		jmp short_sync  ; 10-19 or 21-32: short_sync
 	; reti is at end of all previous jumps
 
 draw_picture:
-	; increment status
-	inc STATUS
 	; set X register to framebuffer start 0x0100
 	; (set it a byte before, because it will be incremented at first)
 	clr r27
@@ -219,18 +217,14 @@ draw_picture:
 	; debug
 
 
-	; immediately start first end-screen short sync (set timer in 0uS):
-	;ldi r27, 0xFF
-	;ldi r26, 0xFF
-	;sts	TCNT1H,r27
-	;sts	TCNT1L,r26
-
-	reti
+	; immediately start first end-screen short sync:
+	inc STATUS
+	jmp short_sync
+	; reti is in short_sync
 ; end draw_picture
 
 long_sync:
 	; long sync: 30uS low (719 cycles @ 24Mhz), 2uS high (48 cycles @ 24Mhz)
-	inc STATUS	; increment status counter
 
 	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
 	jmp long_sync_end
@@ -256,7 +250,6 @@ long_sync:
 
 short_sync:
 	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high (720 cycles @ 24Mhz)
-	inc STATUS	; increment status counter
 
 	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
 	jmp short_sync_end
