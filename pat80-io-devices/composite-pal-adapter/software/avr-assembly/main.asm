@@ -17,8 +17,8 @@
 ; Sync pin: PC0 (pin 22)
 ; Debug hsync pin: PC1 (pin 23)
 ;
-; RESERVED REGISTERS:
-; R25: Current status (what the interrupt should do when fired):
+; STATUS TABLE:
+; R25 (STATUS): Current status (what the interrupt should do when fired):
 ;	0, 1, 2, 3, 4 = long sync
 ;	5, 6, 7, 8, 9 = short sync
 ;	10 = draw lines (draw 304 lines complete with line sync and back porch, then start short
@@ -28,11 +28,15 @@
 
 .include "m1284def.inc"
 
+; registers
+.def A = r0	; accumulator
+.def STATUS = r25	; signal status (see STATUS TABLE)
+
 ; define constant
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
 .equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
-.equ TIMER_DELAY_30US = 65536 - 719 	; 719 cycles @ 24Mhz
-.equ TIMER_DELAY_2US = 65536 - 48		; 48 cycles @ 24Mhz
+.equ TIMER_DELAY_30US = 65535 - 704 	; 719 cycles @ 24Mhz
+.equ TIMER_DELAY_2US = 65535 - 47		; 48 cycles @ 24Mhz
 
 ; memory
 .equ FRAMEBUFFER = 0x100
@@ -93,24 +97,39 @@ main:
 
 ; ********* FUNCTIONS CALLED BY INTERRUPT ***********
 on_tim1_ovf:
+	; debug
+	; sbi	PORTC, DEBUG_PIN	; high
+	; cbi	PORTC, DEBUG_PIN	; low
+	; ; set timer in 30uS (reset timer counter)
+	; ldi r27, high(TIMER_DELAY_30US)
+	; ldi r26, low(TIMER_DELAY_30US)
+	; sts	TCNT1H,r27
+	; sts	TCNT1L,r26
+	; reti
+	; debug
+
+
+
+
+
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
 
-	; if r25 >= 32 then r25=0
-	cpi r25, 32
-	brlt switch_status
-	clr r25
+	; if STATUS >= 17 then STATUS=0
+	cpi STATUS, 17
+	brlo switch_status
+	clr STATUS
 	; check status and decide what to do
 	switch_status:
-		cpi r25, 5
-		brlt long_sync	; 0-4: long sync
-		cpi r25, 10	; 5-9: short sync
+		cpi STATUS, 5
+		brlo long_sync	; 0-4: long sync
+		cpi STATUS, 10	; 5-9: short sync
 		breq draw_picture ; 10: draw picture
 		jmp short_sync ; 11-16: short_sync
 	; reti is at end of all previous jumps
 
 draw_picture:
 	; increment status
-	inc r25
+	inc STATUS
 	; set X register to framebuffer start 0x0100
 	; (set it a byte before, because it will be incremented at first)
 	clr r27
@@ -200,28 +219,26 @@ draw_picture:
 	; debug
 
 
-	; immediately start first end-screen short sync
-	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-	; set timer in 2uS:
-	ldi r27, high(TIMER_DELAY_2US<<1)
-	ldi r26, low(TIMER_DELAY_2US<<1)
-	sts	TCNT1H,r27
-	sts	TCNT1L,r26
+	; immediately start first end-screen short sync (set timer in 0uS):
+	;ldi r27, 0xFF
+	;ldi r26, 0xFF
+	;sts	TCNT1H,r27
+	;sts	TCNT1L,r26
 
 	reti
 ; end draw_picture
 
 long_sync:
 	; long sync: 30uS low (719 cycles @ 24Mhz), 2uS high (48 cycles @ 24Mhz)
-	inc r25	; increment status counter
+	inc STATUS	; increment status counter
 
 	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
 	jmp long_sync_end
 	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 	; set timer in 30uS (reset timer counter)
-	ldi r27, high(TIMER_DELAY_30US<<1)
-	ldi r26, low(TIMER_DELAY_30US<<1)
+	ldi r27, high(TIMER_DELAY_30US)
+	ldi r26, low(TIMER_DELAY_30US)
 	sts	TCNT1H,r27
 	sts	TCNT1L,r26
 	reti
@@ -230,8 +247,8 @@ long_sync:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
 		; set timer in 2uS:
-		ldi r27, high(TIMER_DELAY_2US<<1)
-		ldi r26, low(TIMER_DELAY_2US<<1)
+		ldi r27, high(TIMER_DELAY_2US)
+		ldi r26, low(TIMER_DELAY_2US)
 		sts	TCNT1H,r27
 		sts	TCNT1L,r26
 		reti
@@ -239,15 +256,15 @@ long_sync:
 
 short_sync:
 	; short sync: 2uS low (48 cycles @ 24Mhz), 30uS high (720 cycles @ 24Mhz)
-	inc r25	; increment status counter
+	inc STATUS	; increment status counter
 
 	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
 	jmp short_sync_end
 	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 	; set timer in 2uS (reset timer counter)
-	ldi r27, high(TIMER_DELAY_2US<<1)
-	ldi r26, low(TIMER_DELAY_2US<<1)
+	ldi r27, high(TIMER_DELAY_2US)
+	ldi r26, low(TIMER_DELAY_2US)
 	sts	TCNT1H,r27
 	sts	TCNT1L,r26
 	reti
@@ -256,8 +273,8 @@ short_sync:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
 		; set timer in 30uS:
-		ldi r27, high(TIMER_DELAY_30US<<1)
-		ldi r26, low(TIMER_DELAY_30US<<1)
+		ldi r27, high(TIMER_DELAY_30US)
+		ldi r26, low(TIMER_DELAY_30US)
 		sts	TCNT1H,r27
 		sts	TCNT1L,r26
 		reti
