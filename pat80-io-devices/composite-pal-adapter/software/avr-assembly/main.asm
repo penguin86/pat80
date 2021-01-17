@@ -115,7 +115,7 @@ on_tim1_ovf:
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
 	inc STATUS
 	; if STATUS >= 33 then STATUS=0
-	cpi STATUS, 33
+	cpi STATUS, 35	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
 	brlo switch_status
 	clr STATUS
 	; check status and decide what to do
