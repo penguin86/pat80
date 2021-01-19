@@ -19,9 +19,6 @@
 ;
 
 .include "m1284def.inc" ; Atmega 1280 device definition
-.include "video_generator.asm" ; Asyncronous timer-interrupt-based video generation
-.include "character_generator.asm" ; Character generator
-.include "communication.asm" ; Communication with Pat80
 
 ; reserved registers
 .def A = r0	; accumulator
@@ -30,6 +27,7 @@
 ; define constant
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
 .equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
+.equ CLK_PIN = PD7
 
 ; memory
 .equ FRAMEBUFFER = 0x100
@@ -46,8 +44,13 @@ main:
 	; pins setup
 	sbi	DDRC, SYNC_PIN		; set pin as output
 	sbi	DDRC, DEBUG_PIN		; set pin as output
+	cbi DDRD, CLK_PIN		; set pin as input
 	ldi	r16, 0xFF
 	out DDRA, r16			; set port as output (contains video pin)
+	ldi	r16, 0x00
+	out DDRB, r16			; set port as input (used as data bus)
+	
+
 
 	; *** timer setup (use 16-bit counter TC1) ***
 	; The Power Reduction TC1 and TC3 bits in the Power Reduction Registers (PRR0.PRTIM1 and
@@ -64,6 +67,15 @@ main:
     SEI
 	; Timer setup completed.
 
-	; loop forever
+	; Wait for data (it never exits)
+	jmp comm_init
+
 	forever:
 		jmp forever
+
+
+
+
+.include "video_generator.asm" ; Asyncronous timer-interrupt-based video generation
+.include "character_generator.asm" ; Character generator
+.include "communication.asm" ; Communication with Pat80
