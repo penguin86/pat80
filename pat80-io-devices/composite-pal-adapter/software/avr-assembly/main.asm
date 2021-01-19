@@ -80,27 +80,6 @@ main:
 	; PRR1.PRTIM3) must be written to zero to enable the TC1 and TC3 module.
 	ldi r16, 0b00000000
 	sts	PRR0, r16
-<<<<<<< HEAD
-	ldi r16, 0b00000001
-	sts	PRR1, r16
-	; Set TCNT1 (timer counter) to 0xFF00 (the timer will trigger soon)
-	ser	r27
-	sts	TCNT1H,r27
-	clr r26
-	sts	TCNT1L,r26
-	; Set prescaler to 1:1 (TCCR1B is XXXXX001)
-	ldi r16, 0b00000001
-	sts	TCCR1B, r16
-	; Clear pending interrupts
-	ldi r16, 0b00000001
-	out TIFR1,r16
-	; Enable timer1 overflow interrupt(TOIE1): the interrupt 1 will be fired when timer resets
-	ldi r16, 0b00000001
-	sts	TIMSK1, r16
-	; The Global Interrupt Enable bit must be set for the interrupts to be enabled.
-	ldi r16, 0b10000000
-	sts	SREG, r16
-=======
 	; Set timer prescaler to 1:1
     LDI r16,0b00000001
     sts TCCR1B,r16
@@ -110,7 +89,6 @@ main:
 	; Enable interrupts globally
     SEI
 	; Timer setup completed.
->>>>>>> 901fe50fee42333cc45884e4d9913128272ce175
 
 	; loop forever
 	forever:
@@ -300,1304 +278,1304 @@ draw_line:
 	; 52 chunks of 8 pixels
 
 	; chunk 1
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 2
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 3
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 4
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 5
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 6
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 7
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 8
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 9
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 10
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 11
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 12
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 13
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 14
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 15
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 16
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 17
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 18
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 19
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 20
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 21
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 22
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 23
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 24
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 25
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 26
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 27
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 28
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 29
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 30
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 31
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 32
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 33
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 34
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 35
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 36
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 37
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 38
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 39
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 40
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 41
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 42
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 43
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 44
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 45
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 46
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 47
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 48
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 49
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 50
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 51
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	; chunk 52
-	ld r0, X+	; load pixel	; 2 cycles
-	out PORTA, r0				; 1 cycle
+	ld A, X+	; load pixel	; 2 cycles
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 	nop							; 1 cycle
-	lsr r0						; 1 cycle
-	out PORTA, r0				; 1 cycle
+	lsr A						; 1 cycle
+	out PORTA, A				; 1 cycle
 
 	ret
 
