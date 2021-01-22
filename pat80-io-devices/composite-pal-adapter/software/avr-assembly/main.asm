@@ -23,7 +23,10 @@
 ; reserved registers
 .def A = r0	; accumulator
 .def STATUS = r25	; signal status (see STATUS TABLE)
-
+.def POS_COARSE = Z	; coarse position (aligned to character column)
+.def POS_COARSE_H = r31
+.def POS_COARSE_L = r30
+.def POS_FINE = r24 ; fine position (bit inside coarse-position-pointed byte)
 ; define constant
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
 .equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
