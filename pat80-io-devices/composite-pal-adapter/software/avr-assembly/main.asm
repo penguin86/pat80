@@ -68,6 +68,23 @@ main:
 	ldi	HIGH_ACCUM, 0x00
 	out DDRB, HIGH_ACCUM			; set port as input (used as data bus)
 	
+	; test draw character routine
+	ser r3
+	test_draw_loop:
+		ldi A, "P"
+		call draw_char
+		ldi A, "A"
+		call draw_char
+		ldi A, "T"
+		call draw_char
+		ldi A, "8"
+		call draw_char
+		ldi A, "0"
+		call draw_char
+		ldi A, " "
+		call draw_char
+		dec r3
+		breq test_draw_loop
 
 
 	; *** timer setup (use 16-bit counter TC1) ***
