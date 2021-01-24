@@ -67,23 +67,29 @@ main:
 	out DDRA, HIGH_ACCUM			; set port as output (contains video pin)
 	ldi	HIGH_ACCUM, 0x00
 	out DDRB, HIGH_ACCUM			; set port as input (used as data bus)
-	
+
 	; test draw character routine
-	ser r3
+	ser r17
 	test_draw_loop:
-		ldi A, "P"
+		ldi r16, 'P'
+		mov A, HIGH_ACCUM
 		call draw_char
-		ldi A, "A"
+		ldi HIGH_ACCUM, 'A'
+		mov A, HIGH_ACCUM
 		call draw_char
-		ldi A, "T"
+		ldi HIGH_ACCUM, 'T'
+		mov A, HIGH_ACCUM
 		call draw_char
-		ldi A, "8"
+		ldi HIGH_ACCUM, '8'
+		mov A, HIGH_ACCUM
 		call draw_char
-		ldi A, "0"
+		ldi HIGH_ACCUM, '0'
+		mov A, HIGH_ACCUM
 		call draw_char
-		ldi A, " "
+		ldi HIGH_ACCUM, ' '
+		mov A, HIGH_ACCUM
 		call draw_char
-		dec r3
+		dec r17
 		breq test_draw_loop
 
 
