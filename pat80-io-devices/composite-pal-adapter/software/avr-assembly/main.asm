@@ -68,29 +68,61 @@ main:
 	ldi	HIGH_ACCUM, 0x00
 	out DDRB, HIGH_ACCUM			; set port as input (used as data bus)
 
+	; clear ram
+	;*** Load data into ram ***
+	; Set X to 0x0100
+	ldi r27, high(FRAMEBUFFER)
+	ldi r26, low(FRAMEBUFFER)
+	load_mem_loop:
+		clr r17
+		st X+, r17
+		; if reached the last framebuffer byte, exit cycle
+		cpi r27, 0b00111110
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+		cpi r26, 0b11000000
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+
 	; test draw character routine
-	ser r17
-	test_draw_loop:
-		ldi r16, 'P'
-		mov A, HIGH_ACCUM
-		call draw_char
-		ldi HIGH_ACCUM, 'A'
-		mov A, HIGH_ACCUM
-		call draw_char
-		ldi HIGH_ACCUM, 'T'
-		mov A, HIGH_ACCUM
-		call draw_char
-		ldi HIGH_ACCUM, '8'
-		mov A, HIGH_ACCUM
-		call draw_char
-		ldi HIGH_ACCUM, '0'
-		mov A, HIGH_ACCUM
-		call draw_char
-		ldi HIGH_ACCUM, ' '
-		mov A, HIGH_ACCUM
-		call draw_char
-		dec r17
-		breq test_draw_loop
+	;call cursor_pos_home
+	ldi HIGH_ACCUM, 'P'
+	call draw_char
+	ldi HIGH_ACCUM, 'A'
+	call draw_char
+	ldi HIGH_ACCUM, 'T'
+	call draw_char
+	ldi HIGH_ACCUM, '8'
+	call draw_char
+	ldi HIGH_ACCUM, '0'
+	call draw_char
+	ldi HIGH_ACCUM, ' '
+	call draw_char
+	ldi HIGH_ACCUM, 'H'
+	call draw_char
+	ldi HIGH_ACCUM, 'o'
+	call draw_char
+	ldi HIGH_ACCUM, 'm'
+	call draw_char
+	ldi HIGH_ACCUM, 'e'
+	call draw_char
+	ldi HIGH_ACCUM, ' '
+	call draw_char
+	ldi HIGH_ACCUM, 'c'
+	call draw_char
+	ldi HIGH_ACCUM, 'o'
+	call draw_char
+	ldi HIGH_ACCUM, 'm'
+	call draw_char
+	ldi HIGH_ACCUM, 'p'
+	call draw_char
+	ldi HIGH_ACCUM, 'u'
+	call draw_char
+	ldi HIGH_ACCUM, 't'
+	call draw_char
+	ldi HIGH_ACCUM, 'e'
+	call draw_char
+	ldi HIGH_ACCUM, 'r'
+	call draw_char
+
 
 
 	; *** timer setup (use 16-bit counter TC1) ***
@@ -109,7 +141,7 @@ main:
 	; Timer setup completed.
 
 	; Wait for data (it never exits)
-	jmp comm_init
+	;jmp comm_init
 
 	forever:
 		jmp forever

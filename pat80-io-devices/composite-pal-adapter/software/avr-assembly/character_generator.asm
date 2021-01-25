@@ -9,8 +9,8 @@
 .equ LINE_COLUMNS = 52	; number of columns (characters or chunks) per line
 
 ; Draws character in register A to the screen at current coords (Y)
-; @param A (r0) ascii code to display
-; @modifies r0 (A), r1, r2, r3, r16 (HIGH_ACCUM), Y, Z
+; @param r16 (HIGH_ACCUM) ascii code to display
+; @modifies r0 (A), r1, r2, r3, r16 (HIGH_ACCUM), r17, Y, Z
 draw_char:
 	; Glyph's first byte is at:
 	; glyph_pointer = font_starting_mem_pos + (ascii_code * number_of_bytes_per_font)
@@ -22,13 +22,13 @@ draw_char:
 	mov r3, YH
 
 	; Load first glyph position on Z
-	ldi ZH, high(FONT)
-	ldi ZL, low(FONT)
-	; Obtain offset multiplying ascii_code * number_of_bytes_per_fontr1
-	ldi HIGH_ACCUM, FONT_HEIGHT
-	mul A, HIGH_ACCUM	; result overwrites r0 and r1!
+	ldi ZH, high(FONT<<1)
+	ldi ZL, low(FONT<<1)
+	; Obtain offset multiplying ascii_code * number_of_bytes_per_font
+	ldi r17, FONT_HEIGHT
+	mul HIGH_ACCUM, r17	; result overwrites r0 and r1!
 	; 16-bit addition between gliph's first byte position and offset (and store result in Z)
-	add ZL, A
+	add ZL, r0
 	adc ZH, r1
 	; Z contain our glyph's first byte position: draw it
 	; The drawing consist of FONT_HEIGHT cycles. Every glyph byte is placed on its own line
@@ -48,4 +48,12 @@ draw_char:
 	mov YL, r2	; first restore Y
 	mov YH, r3
 	adiw YH:YL,1	; just increment pre-char-drawing-saved chunk cursor position by 1
+	ret
+
+; Sets the cursor to 0,0 and clears fine position
+cursor_pos_home:
+	; Set Y to framebuffer start
+	ldi YH, high(FRAMEBUFFER)
+	ldi YL, low(FRAMEBUFFER)
+	clr POS_FINE
 	ret

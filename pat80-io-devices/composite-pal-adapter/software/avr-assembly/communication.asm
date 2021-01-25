@@ -31,10 +31,3 @@ comm_init:
 		brne comm_wait_byte	; if not 0, repeat h_picture_loop
         jmp comm_init ; filled all memory: reset framebuffer position
 
-; Sets the cursor to 0,0 and clears fine position
-cursor_pos_home:
-	; Set Y to framebuffer start
-	ldi YH, high(FRAMEBUFFER<<1)
-	ldi YL, low(FRAMEBUFFER<<1)
-	clr POS_FINE
-	ret
