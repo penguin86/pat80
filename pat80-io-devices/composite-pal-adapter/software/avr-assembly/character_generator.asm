@@ -53,7 +53,10 @@ draw_char:
 ; Sets the cursor to 0,0 and clears fine position
 cursor_pos_home:
 	; Set Y to framebuffer start
-	ldi YH, high(FRAMEBUFFER)
-	ldi YL, low(FRAMEBUFFER)
+	;ldi YH, high(FRAMEBUFFER)
+	;ldi YL, low(FRAMEBUFFER)
+	ldi YH, high(0x0068)
+	ldi YL, low(0x0068)
 	clr POS_FINE
 	ret
+

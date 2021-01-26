@@ -27,13 +27,17 @@
 
 .include "m1284def.inc" ; Atmega 1280 device definition
 
-; reserved registers
+; *** reserved registers ***
+; Cursor Position
+.def POS_COLUMN = r21 ; absolute coarse position on line (0 to 51)
+.def POS_ROW = r20 ; absolute coarse position on line (0 to 51)
+.def POS_FINE = r24 ; fine position (bit inside coarse-position-pointed byte)
+; Internal registers
 .def A = r0	; accumulator
 .def STATUS = r25	; signal status (see STATUS TABLE)
 ;POS_COARSE = Y	; coarse position (aligned to character column)
-;DRAWING_BYTE = X	; coarse position (aligned to character column)
-.def POS_FINE = r24 ; fine position (bit inside coarse-position-pointed byte)
-.def LINE_COUNTER = r23 ; fine position (bit inside coarse-position-pointed byte)
+;DRAWING_BYTE = X	; current position in framebuffer
+.def LINE_COUNTER = r23
 .def VG_HIGH_ACCUM = r22 ; an accumulator in high registers to be used only by video_generator in interrupt
 .def HIGH_ACCUM = r16 ; an accumulator in high registers to be used outside of interrupts
 
@@ -47,7 +51,7 @@
 .equ BUSY_PIN = PD2
 
 ; memory
-.equ FRAMEBUFFER = 0x100
+.equ FRAMEBUFFER = 0x0100
 
 ; start vector
 .org 0x0000
@@ -83,7 +87,7 @@ main:
 		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
 	; test draw character routine
-	;call cursor_pos_home
+	call cursor_pos_home
 	ldi r18, 0x30
 	draw_chars:
 		mov HIGH_ACCUM, r18
