@@ -29,9 +29,12 @@
 
 ; *** reserved registers ***
 ; Cursor Position
-.def POS_COLUMN = r21 ; absolute coarse position on line (0 to 51)
-.def POS_ROW = r20 ; absolute coarse position on line (0 to 51)
-.def POS_FINE = r24 ; fine position (bit inside coarse-position-pointed byte)
+;     POS_COLUMN (0-103) represents the column on a pair of rows: 0 to 51 is the first row, 52 to 103 the second one
+;     POS_ROWP (0-152) represent the pair of rows. POS_ROWP = 5 means the 10th and 11th rows
+;     POS_FINE represents fine position (bit inside coarse-position-pointed chunk) in graphic mode.
+.def POS_COLUMN = r21
+.def POS_ROWP = r20
+.def POS_FINE = r24
 ; Internal registers
 .def A = r0	; accumulator
 .def STATUS = r25	; signal status (see STATUS TABLE)
@@ -52,6 +55,7 @@
 
 ; memory
 .equ FRAMEBUFFER = 0x0100
+.equ FRAMEBUFFER_END = 0x3EC0
 
 ; start vector
 .org 0x0000
@@ -88,13 +92,53 @@ main:
 
 	; test draw character routine
 	call cursor_pos_home
-	ldi r18, 0x30
+	ldi r18, 0x21
 	draw_chars:
 		mov HIGH_ACCUM, r18
 		call draw_char
 		inc r18
-		cpi r18, 0x64
+		cpi r18, 0x7E
 		brne draw_chars
+
+	ldi r18, 0x21
+	draw_chars2:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x7E
+		brne draw_chars2
+
+	ldi r18, 0x21
+	draw_chars3:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x7E
+		brne draw_chars3
+
+	ldi r18, 0x21
+	draw_chars4:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x7E
+		brne draw_chars4
+
+	ldi r18, 0x21
+	draw_chars5:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x7E
+		brne draw_chars5
+
+	ldi r18, 0x21
+	draw_chars6:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x7E
+		brne draw_chars6
 
 
 

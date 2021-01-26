@@ -27,7 +27,7 @@ draw_char:
 	; Obtain offset multiplying ascii_code * number_of_bytes_per_font
 	ldi r17, FONT_HEIGHT
 	mul HIGH_ACCUM, r17	; result overwrites r0 and r1!
-	; 16-bit addition between gliph's first byte position and offset (and store result in Z)
+	; 16-bit addition between gliph's first byte position and offset (and store result in Z) to obtain our glyph position
 	add ZL, r0
 	adc ZH, r1
 	; Z contain our glyph's first byte position: draw it
@@ -44,19 +44,66 @@ draw_char:
 		; Decrement loop counter and exit if reached 0
 		dec HIGH_ACCUM
 		brne draw_char_loop
-	; Char drawing is complete. Set chunk cursor position to next char first line
+
+	; Char drawing is complete. Increment cursor position
+	inc POS_COLUMN
+	; Check if end of line
+	cpi POS_COLUMN, 52
+	breq draw_char_eol
+	; Reset chunk position to first glyph line of next column
 	mov YL, r2	; first restore Y
 	mov YH, r3
 	adiw YH:YL,1	; just increment pre-char-drawing-saved chunk cursor position by 1
 	ret
+	draw_char_eol:
+		clr POS_COLUMN	; reset column to 0
+		adiw YH:YL,1 ; increment chunk cursor position by 1 (begin of next line on screen)
+		; Check if end of screen
+		cpi YH, high(FRAMEBUFFER_END + 1)
+		brne draw_char_end
+		cpi YL, low(FRAMEBUFFER_END + 1)
+		brne draw_char_end
+		; End of screen reached! Scroll framebuffer by 1 line (=52*FONT_HEIGHT bytes)
+		; TODO
+	draw_char_end:
+		ret
 
 ; Sets the cursor to 0,0 and clears fine position
 cursor_pos_home:
-	; Set Y to framebuffer start
-	;ldi YH, high(FRAMEBUFFER)
-	;ldi YL, low(FRAMEBUFFER)
-	ldi YH, high(0x0068)
-	ldi YL, low(0x0068)
+	; Set all positions to 0
+	clr POS_COLUMN
+	clr POS_ROWP
 	clr POS_FINE
+	; Load framebuffer start position to Y
+	ldi YH, high(FRAMEBUFFER)
+	ldi YL, low(FRAMEBUFFER)
+	; ldi YH, high(0x1000)
+	; ldi YL, low(0x1000)
 	ret
+
+; Updates framebuffer pointer (Y) to point to current text cursor position (POS_COLUMN, POS_ROWP)
+; Usage:
+;    ldi POS_COLUMN, 55
+;    ldi POS_ROWP, 13
+;    call set_framebuffer_pointer_to_text_cursor ; (sets cursor to 4th character of second row in 13th row-pair = column 4, row 27 on screen)
+; @modifies Y, R0, R1
+set_framebuffer_pointer_to_text_cursor:
+	; Load framebuffer start position to Y
+	ldi YH, high(FRAMEBUFFER)
+	ldi YL, low(FRAMEBUFFER)
+	; Obtain offset between 0,0 and current cursor position
+	mul POS_COLUMN, POS_ROWP	; result is in r1,r0
+	; Sum offset to Y
+	add YL, r0
+	adc YH, r1
+	ret
+
+
+
+; Draws a newline
+; Moves cursor to start of following screen line
+; Takes care of particular cases, i.e. end of screen (shifts all screen up by one line)
+draw_carriage_return:
+	ret
+
 
