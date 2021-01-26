@@ -84,44 +84,13 @@ main:
 
 	; test draw character routine
 	;call cursor_pos_home
-	ldi HIGH_ACCUM, 'P'
-	call draw_char
-	ldi HIGH_ACCUM, 'A'
-	call draw_char
-	ldi HIGH_ACCUM, 'T'
-	call draw_char
-	ldi HIGH_ACCUM, '8'
-	call draw_char
-	ldi HIGH_ACCUM, '0'
-	call draw_char
-	ldi HIGH_ACCUM, ' '
-	call draw_char
-	ldi HIGH_ACCUM, 'H'
-	call draw_char
-	ldi HIGH_ACCUM, 'o'
-	call draw_char
-	ldi HIGH_ACCUM, 'm'
-	call draw_char
-	ldi HIGH_ACCUM, 'e'
-	call draw_char
-	ldi HIGH_ACCUM, ' '
-	call draw_char
-	ldi HIGH_ACCUM, 'c'
-	call draw_char
-	ldi HIGH_ACCUM, 'o'
-	call draw_char
-	ldi HIGH_ACCUM, 'm'
-	call draw_char
-	ldi HIGH_ACCUM, 'p'
-	call draw_char
-	ldi HIGH_ACCUM, 'u'
-	call draw_char
-	ldi HIGH_ACCUM, 't'
-	call draw_char
-	ldi HIGH_ACCUM, 'e'
-	call draw_char
-	ldi HIGH_ACCUM, 'r'
-	call draw_char
+	ldi r18, 0x30
+	draw_chars:
+		mov HIGH_ACCUM, r18
+		call draw_char
+		inc r18
+		cpi r18, 0x64
+		brne draw_chars
 
 
 
