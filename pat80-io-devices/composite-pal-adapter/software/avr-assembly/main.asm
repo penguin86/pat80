@@ -158,7 +158,7 @@ main:
 	; Timer setup completed.
 
 	; Wait for data (it never exits)
-	;jmp comm_init
+	jmp comm_init
 
 	forever:
 		jmp forever

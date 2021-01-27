@@ -18,16 +18,20 @@
 comm_init:
 	call cursor_pos_home ; Set cursor to 0,0
     comm_wait_byte:
-        in A, DATA_PORT_IN   ; read PORTB
+        in HIGH_ACCUM, DATA_PORT_IN   ; read PORTB
         ; Check continuously CLK until a LOW is found
         sbic PORTD, CLK_PIN
         jmp comm_wait_byte
-        ; CLK triggered: Copy PORTB to the next framebuffer byte
-        st Y+, A
-        ; if reached the last framebuffer byte, exit cycle
-		cpi r31, 0b00111110
-		brne comm_wait_byte	; if not 0, repeat h_picture_loop
-		cpi r30, 0b11000000
-		brne comm_wait_byte	; if not 0, repeat h_picture_loop
-        jmp comm_init ; filled all memory: reset framebuffer position
+        ; CLK triggered: Draw char
+        call draw_char
+        jmp comm_wait_byte
+
+        ; ; CLK triggered: Copy PORTB to the next framebuffer byte
+        ; st Y+, A
+        ; ; if reached the last framebuffer byte, exit cycle
+		; cpi r31, 0b00111110
+		; brne comm_wait_byte	; if not 0, repeat h_picture_loop
+		; cpi r30, 0b11000000
+		; brne comm_wait_byte	; if not 0, repeat h_picture_loop
+        ; jmp comm_init ; filled all memory: reset framebuffer position
 
