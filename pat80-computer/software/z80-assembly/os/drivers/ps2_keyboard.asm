@@ -20,32 +20,53 @@
 ; behave strangely (will drop next pressed key). This is not a problem, as the computer, once completed, will
 ; have a 60% keyboard, without any of the unusable keys.
 
-include "ps2_keyboard_scancodeset2.asm"    ; PS/2 Scan Codeset 2 mappings
+include 'ps2_keyboard_scancodeset2.asm'    ; PS/2 Scan Codeset 2 mappings
 
 ; config (IO port 1)
-PS2KEYB_CLEAR_REG: EQU IO_1
-PS2KEYB_DATA_REG: EQU IO_1 + 1
+PS2KEYB_CLEAR_REG: EQU IO_2
+PS2KEYB_DATA_REG: EQU IO_2 + 1
+
+PS2KEYB_TRANSMISSION_DURATION: EQU 86 ;@ 100khz    ; The time needed for the keyboard to transmit all the 11 bits of data, in CPU clock cycles
 
 PS2KEYB_BREAK: EQU 0xF0 - %10000000    ; The MSB is dropped: see NOTE on intro above
 
-; Reads a single character. 0s are ignored (can be used with keyboard).
-; Doesn't check DATA_AVAILABLE register of parallel port, because a 0 byte
-; is ignored anyway (it represents the ASCII NUL control char).
+; Reads a single character and returns an ascii code when a valid key is pressed. Blocking.
 ; @return A The read character
 PS2Keyb_readc:
     in a, (PS2KEYB_DATA_REG)    ; reads a character
     add a, 0
     jp z, Term_readc     ; if char is 0 (NULL), user didn't press any key: wait for character
-	; check if code is a Break Code (0xF0). If it is, discard next key as it is a released key
-	ld b, a    ; save a
-	cp 0xF0    ; compare a with Break Code
-	jp z, ps2keyb_readc_discard
+	; we found something, allow the keyboard to complete data transmission
+	ld a, PS2KEYB_TRANSMISSION_DURATION/5    ; every cycle is 5 CPU cycles
+	ps2keyb_readc_waitloop:
+		sub 1
+		jr nz, ps2keyb_readc_waitloop
+	; data transmission should now be complete.
+	; check if code is a Break Code. If it is, discard next key as it is a released key
+	ld c, a    ; save a
+	cp PS2KEYB_BREAK    ; compare a with Break Code
+	jp z, ps2keyb_readc_discard    ; if it is a Break Code, jump to discarder routine
 	; we read a valid character: clean key registers
 	in a, PS2KEYB_CLEAR_REG
-	; TODO: Interpretare keycode con lo scan code set
-	;ld a, b    ; restore a
+	; now we will convert keycode in c to ASCII code
+	ld hl, PS2KEYB_SCANCODESET_ASCII_MAP    ; load start of codeset to ascii map
+	ld b, 0    ; reset b, as we are going to do a sum with bc (where c contains the read scancode)
+	add hl, bc    ; add scancode value to map start addr (we are using it as offset)
+	ld a, (hl)    ; load the corresponding ascii code in a for return
     ret ; returns in the a register
 	ps2keyb_readc_discard:
-		; waits for next non-0 keycode and discards it
-		; TODO
-		jp PS2Keyb_readc    ; go back and wait for another keycode
+		; clean key registers
+		in a, PS2KEYB_CLEAR_REG
+		ps2keyb_readc_discard_waitfordata:
+			; wait for next non-0 keycode and discards it (it is the code of the released key)
+			in a, (PS2KEYB_DATA_REG)    ; reads a character
+			add a, 0
+			jp z, ps2keyb_readc_discard_waitfordata     ; if char is 0 (NULL), wait
+			; we found something, allow the keyboard to complete data transmission
+			ld a, PS2KEYB_TRANSMISSION_DURATION/5    ; every cycle is 5 CPU cycles
+			ps2keyb_readc_discard_waitloop:
+				sub 1
+				jr nz, ps2keyb_readc_discard_waitloop
+			; data transmission should now be complete, throw away key code
+			in a, PS2KEYB_CLEAR_REG
+	jp PS2Keyb_readc    ; go back and wait for another keycode

@@ -10,9 +10,9 @@ jp Sysinit     ; Startup vector: DO NOT MOVE! Must be the first instruction
 ;       DRIVERS VAR SPACE: 0x9000 - 0x9FFF (4kb)
 ;       APPLICATION VAR SPACE: 0xA000 - 0xFFFF (24kb)
 ; I/O MAP
-;   I/O 0 (0x00 - 0x1F) Parallel terminal (uses addr 0x00 only)
+;   I/O 0 (0x00 - 0x1F) Parallel terminal (uses addr 0x00 and 0x01)
 ;   I/O 1 (0x20 - 0x3F) Sound card (uses addr 0x20 only)
-;   I/O 2 (0x40 - 0x5F)
+;   I/O 2 (0x40 - 0x5F) PS2 Keyboard (uses 0x40 and 0x41)
 ;   I/O 3 (0x60 - 0x7F)
 ;   I/O 4 (0x80 - 0x9F)
 ;   I/O 5 (0xA0 - 0xBF)
@@ -56,7 +56,8 @@ Sys_Printc:
 ; Reads a single character
 ; @return A The read character
 Sys_Readc:
-    jp Term_readc
+    ;jp Term_readc
+    jp PS2Keyb_readc
 
 ; Reads a line
 ; @return BC The pointer to a null-terminated read string
@@ -91,6 +92,7 @@ IO_7: EQU 0xE0
 
 ;include 'drivers/hd44780.asm'
 ;include 'drivers/keyboard.asm'
+include 'drivers/ps2_keyboard.asm'
 include 'drivers/arduino_terminal.asm'
 include 'drivers/sn76489.asm'
 include 'monitor.asm'
