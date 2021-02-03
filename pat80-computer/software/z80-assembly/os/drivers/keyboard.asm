@@ -1,4 +1,5 @@
 ; Keyboard driver
+; Direct keyboard grid control (direct keys addressing, without keyboard controller)
 ; @author Daniele Verducci
 ;
 ; Requires declaration of following pointers, one for every column of the keys grid:
