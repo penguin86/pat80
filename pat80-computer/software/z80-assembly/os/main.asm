@@ -116,9 +116,19 @@ Sysinit:
     call Sys_Beep
 
 	; Run memory monitor
-	ei ; enable maskabpe interrupts
-	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
-	rst 0x38 ; throw fake interrupt: jump to interrupt routine to start monitor
+	; ei ; enable maskabpe interrupts
+	; im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
+	; rst 0x38 ; throw fake interrupt: jump to interrupt routine to start monitor
+
+    ; Keyboard test
+    ld a, 0x3E
+    call Sys_Printc
+    ktestloop:
+        call Sys_Readc
+        call Sys_Printc
+        ld a, 46
+        call Sys_Printc
+        jp ktestloop
 
 	; User exited from memory monitor without loading a program. Do nothing.
 	mloop:

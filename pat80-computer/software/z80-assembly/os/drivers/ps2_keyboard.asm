@@ -3,9 +3,9 @@
 ; Based on PS/2 protocol as documented on http://www.lucadavidian.com/2017/11/15/interfacing-ps2-keyboard-to-a-microcontroller/
 ;
 ; The CLK and Data pin of the PS/2 keyboard are fed into two cascated serial-in parallel-out shift registers.
-; Their outputs are connected to the Pat80 data bus via a buffer activated by the selected 
-; I/O EN signal and their RESET is connected to I/O Address line 0 of the keyboard I/O port. 
-; Being RESET active low, they will be erased when the PAT80 reads (or writes) anything at address 0 
+; Their outputs are connected to the Pat80 data bus via a buffer activated by the selected
+; I/O EN signal and their RESET is connected to I/O Address line 0 of the keyboard I/O port.
+; Being RESET active low, they will be erased when the PAT80 reads (or writes) anything at address 0
 ; of the keyboard I/0 port.
 ;
 ; Thus, the read cycle is:
@@ -20,7 +20,7 @@
 ; behave strangely (will drop next pressed key). This is not a problem, as the computer, once completed, will
 ; have a 60% keyboard, without any of the unusable keys.
 
-include 'ps2_keyboard_scancodeset2.asm'    ; PS/2 Scan Codeset 2 mappings
+include 'drivers/ps2_keyboard_scancodeset2.asm'    ; PS/2 Scan Codeset 2 mappings
 
 ; config (IO port 1)
 PS2KEYB_CLEAR_REG: EQU IO_2
@@ -35,19 +35,20 @@ PS2KEYB_BREAK: EQU 0xF0 - %10000000    ; The MSB is dropped: see NOTE on intro a
 PS2Keyb_readc:
     in a, (PS2KEYB_DATA_REG)    ; reads a character
     add a, 0
-    jp z, Term_readc     ; if char is 0 (NULL), user didn't press any key: wait for character
-	; we found something, allow the keyboard to complete data transmission
+    jp z, PS2Keyb_readc     ; if char is 0 (NULL), user didn't press any key: wait for character
+	; we found something, but it may still be shifting in bits. Allow the keyboard to complete data transmission
 	ld a, PS2KEYB_TRANSMISSION_DURATION/5    ; every cycle is 5 CPU cycles
 	ps2keyb_readc_waitloop:
 		sub 1
 		jr nz, ps2keyb_readc_waitloop
 	; data transmission should now be complete.
 	; check if code is a Break Code. If it is, discard next key as it is a released key
-	ld c, a    ; save a
+	in a, (PS2KEYB_DATA_REG)    ; re-reads the character (it should now be complete)
+	ld c, a    ; save a, because it will be modified by next compare
 	cp PS2KEYB_BREAK    ; compare a with Break Code
 	jp z, ps2keyb_readc_discard    ; if it is a Break Code, jump to discarder routine
 	; we read a valid character: clean key registers
-	in a, PS2KEYB_CLEAR_REG
+	in a, (PS2KEYB_CLEAR_REG)
 	; now we will convert keycode in c to ASCII code
 	ld hl, PS2KEYB_SCANCODESET_ASCII_MAP    ; load start of codeset to ascii map
 	ld b, 0    ; reset b, as we are going to do a sum with bc (where c contains the read scancode)
@@ -56,7 +57,7 @@ PS2Keyb_readc:
     ret ; returns in the a register
 	ps2keyb_readc_discard:
 		; clean key registers
-		in a, PS2KEYB_CLEAR_REG
+		in a, (PS2KEYB_CLEAR_REG)
 		ps2keyb_readc_discard_waitfordata:
 			; wait for next non-0 keycode and discards it (it is the code of the released key)
 			in a, (PS2KEYB_DATA_REG)    ; reads a character
@@ -68,5 +69,5 @@ PS2Keyb_readc:
 				sub 1
 				jr nz, ps2keyb_readc_discard_waitloop
 			; data transmission should now be complete, throw away key code
-			in a, PS2KEYB_CLEAR_REG
+			in a, (PS2KEYB_CLEAR_REG)
 	jp PS2Keyb_readc    ; go back and wait for another keycode
