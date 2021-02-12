@@ -29,7 +29,7 @@
 
 .equ TIMER_DELAY_30US = 65535 - 690 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_2US = 65535 - 17		; 48 cycles @ 24Mhz (minus overhead)
-.equ BACK_PORCH_DELAY = 258				; 186 cycles back porch + 72 cycles to leave 3 chunks empty (image padding)
+.equ BACK_PORCH_DELAY = 234				; 186 cycles back porch + 48 cycles to leave 2 chunks empty (image padding)
 
 
 ; ********* FUNCTIONS CALLED BY INTERRUPT ***********
@@ -1350,7 +1350,7 @@ draw_line:
 	; chunk 47, 48, 49 (blank)
 	clr A					; 1 cycle
 	out VIDEO_PORT_OUT, A	; 1 cycle
-	ldi VG_HIGH_ACCUM, 23									; 1 cycle
+	ldi VG_HIGH_ACCUM, 31									; 1 cycle
 	eol_porch_loop: ; requires 3 cpu cycles
 		dec VG_HIGH_ACCUM									; 1 cycle
 		brne eol_porch_loop									; 2 if jumps, 1 if continues

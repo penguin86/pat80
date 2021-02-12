@@ -89,7 +89,7 @@ main:
 
 	; test draw character routine
 	call cursor_pos_home
-	ldi r19, 12
+	ldi r19, 14
 	dctest:
 		ldi r18, 0x21
 		draw_chars:
