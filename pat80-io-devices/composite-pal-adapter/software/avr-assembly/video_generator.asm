@@ -4,8 +4,8 @@
 ; *******************************************
 
 ; This module generates a Composite PAL monochrome signal with a resolution
-; of 416x304 pixels (= 52x38 characters). The signal is generated using 16-bit
-; Timer1 and interrupts.
+; of 416x304 pixels of which only 376x232 pizels are visible (= 47x29 characters).
+; The signal is generated using 16-bit Timer1 and interrupts.
 
 
 ; How does it work:
@@ -51,7 +51,7 @@ draw_picture:
 	; save X register
 	push XH
 	push XL
-	
+
 	; set X register to framebuffer start 0x0100
 	; (set it a byte before, because it will be incremented at first)
 	clr r27
