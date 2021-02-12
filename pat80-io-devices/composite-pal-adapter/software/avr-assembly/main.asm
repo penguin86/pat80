@@ -1,7 +1,4 @@
 ; VIDEO COMPOSITE PAL IO DEVICE
-; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
-; Every line, for 52 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
-; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
 ;
 ; INTERFACING WITH PAT80:
 ; Use PortB as data port. Before writing anything, issue a read (pin RW HIGH) and check the busy pin on the data port. 
@@ -55,7 +52,7 @@
 
 ; memory
 .equ FRAMEBUFFER = 0x0100
-.equ FRAMEBUFFER_END = 0x3EC0
+.equ FRAMEBUFFER_END = 0x2AB0
 
 ; start vector
 .org 0x0000
@@ -92,53 +89,17 @@ main:
 
 	; test draw character routine
 	call cursor_pos_home
-	ldi r18, 0x21
-	draw_chars:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars
-
-	ldi r18, 0x21
-	draw_chars2:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars2
-
-	ldi r18, 0x21
-	draw_chars3:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars3
-
-	ldi r18, 0x21
-	draw_chars4:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars4
-
-	ldi r18, 0x21
-	draw_chars5:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars5
-
-	ldi r18, 0x21
-	draw_chars6:
-		mov HIGH_ACCUM, r18
-		call draw_char
-		inc r18
-		cpi r18, 0x7E
-		brne draw_chars6
+	ldi r19, 12
+	dctest:
+		ldi r18, 0x21
+		draw_chars:
+			mov HIGH_ACCUM, r18
+			call draw_char
+			inc r18
+			cpi r18, 0x7E
+			brne draw_chars
+		dec r19
+		brne dctest
 
 
 

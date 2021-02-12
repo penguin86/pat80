@@ -3,8 +3,12 @@
 ; *        Video generator module           *
 ; *******************************************
 
+; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
+; Every line, for 52 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
+; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
+
 ; This module generates a Composite PAL monochrome signal with a resolution
-; of 416x304 pixels of which only 376x232 pizels are visible (= 47x29 characters).
+; of 416x304 pixels of which only 376x232 pizels are visible (= 46x29 characters).
 ; The signal is generated using 16-bit Timer1 and interrupts.
 
 
@@ -25,6 +29,7 @@
 
 .equ TIMER_DELAY_30US = 65535 - 690 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_2US = 65535 - 17		; 48 cycles @ 24Mhz (minus overhead)
+.equ BACK_PORCH_DELAY = 258				; 186 cycles back porch + 72 cycles to leave 3 chunks empty (image padding)
 
 
 ; ********* FUNCTIONS CALLED BY INTERRUPT ***********
@@ -77,14 +82,13 @@ draw_picture:
 
 		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
 		; leave time at the end for line setup and draw_line call
-		ldi VG_HIGH_ACCUM, 62									; 1 cycle
+		ldi VG_HIGH_ACCUM, BACK_PORCH_DELAY/3									; 1 cycle
 		l_sync_back_porch_loop:
 			dec VG_HIGH_ACCUM									; 1 cycle
 			brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
 		; **** end back porch
 
 		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
-		; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
 
 
 
@@ -105,14 +109,13 @@ draw_picture:
 
 		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
 		; leave time at the end for line setup and draw_line call
-		ldi VG_HIGH_ACCUM, 62									; 1 cycle
+		ldi VG_HIGH_ACCUM, BACK_PORCH_DELAY/3									; 1 cycle
 		l_sync_back_porch_loop2:
 			dec VG_HIGH_ACCUM									; 1 cycle
 			brne l_sync_back_porch_loop2  							; 2 cycle if true, 1 if false
 		; **** end back porch
 
 		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
-		; **** draws line pixels: 52uS, 1248 cycles @ 24Mhz ****
 
 		dec LINE_COUNTER ; decrement line countr					; 1 cycle
 		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
@@ -192,7 +195,7 @@ short_sync:
 
 draw_line:
 	; NO loops, as this is time-strict
-	; 52 chunks of 8 pixels
+	; 46 chunks of 8 pixels
 
 	; chunk 1
 	ld A, X+	; load pixel	; 2 cycles
@@ -1344,154 +1347,12 @@ draw_line:
 	lsr A						; 1 cycle
 	out VIDEO_PORT_OUT, A				; 1 cycle
 
-	; chunk 47
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-
-	; chunk 48
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-
-	; chunk 49
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-
-	; chunk 50
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-
-	; chunk 51
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-
-	; chunk 52
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
-	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	; chunk 47, 48, 49 (blank)
+	clr A					; 1 cycle
+	out VIDEO_PORT_OUT, A	; 1 cycle
+	ldi VG_HIGH_ACCUM, 23									; 1 cycle
+	eol_porch_loop: ; requires 3 cpu cycles
+		dec VG_HIGH_ACCUM									; 1 cycle
+		brne eol_porch_loop									; 2 if jumps, 1 if continues
 
 	ret

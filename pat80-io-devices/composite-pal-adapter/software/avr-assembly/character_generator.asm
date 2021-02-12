@@ -6,7 +6,7 @@
 ; This module generates the character pixels using the font present in rom
 ; and adds it on the framebuffer in the position indicated by POS_COARSE (Y).
 
-.equ LINE_COLUMNS = 52	; number of columns (characters or chunks) per line
+.equ LINE_COLUMNS = 46	; number of columns (characters or chunks) per line
 
 ; Draws character in register A to the screen at current coords (Y)
 ; @param r16 (HIGH_ACCUM) ascii code to display
@@ -75,11 +75,8 @@ cursor_pos_home:
 	clr POS_ROWP
 	clr POS_FINE
 	; Load framebuffer start position to Y
-	; ldi YH, high(FRAMEBUFFER)
-	; ldi YL, low(FRAMEBUFFER)
-	; TODO: First 3 lines are not visible! Outside of screen!
-	ldi YH, high(0x780)
-	ldi YL, low(0x780)
+	ldi YH, high(FRAMEBUFFER)
+	ldi YL, low(FRAMEBUFFER)
 	ret
 
 ; Updates framebuffer pointer (Y) to point to current text cursor position (POS_COLUMN, POS_ROWP)
