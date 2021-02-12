@@ -22,13 +22,17 @@
 ; R25 (STATUS): Current status (what the interrupt should do when fired):
 ;	0-9 = long sync
 ;	10-19 = short sync
-;	20 = draw lines (draw 304 lines complete with line sync and back porch, then start short
+;   20-44 = draw empty lines (top vertical padding)
+;	45 = draw lines (draw 304 lines complete with line sync and back porch, then start short
 ;		sync: sync pin low and next interrupt after 2uS)
-;	21-32 = short sync
-;	33-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
+;   46-70 = draw empty lines (bottom vertical padding)
+;	71-82 = short sync
+;	83-255 = invalid state or screen draw finished: set to 0 and restart from first long sync start
 
+.equ TIMER_DELAY_60US = 65535 - 1409 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_30US = 65535 - 690 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_2US = 65535 - 17		; 48 cycles @ 24Mhz (minus overhead)
+.equ TIMER_DELAY_4US = 65535 - 65		; 96 cycles @ 24Mhz (minus overhead)
 .equ BACK_PORCH_DELAY = 234				; 186 cycles back porch + 48 cycles to leave 2 chunks empty (image padding)
 
 
@@ -39,8 +43,8 @@ on_tim1_ovf:
 	sbi PORTD, BUSY_PIN
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
 	inc STATUS
-	; if STATUS >= 33 then STATUS=0
-	cpi STATUS, 35	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
+	; if STATUS >= 83 then STATUS=0
+	cpi STATUS, 85	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
 	brlo switch_status
 	clr STATUS
 	; check status and decide what to do
@@ -48,92 +52,18 @@ on_tim1_ovf:
 		cpi STATUS, 10
 		brlo long_sync	; 0-9: long sync
 		cpi STATUS, 20
-		breq draw_picture ; 20: draw picture
-		jmp short_sync  ; 10-19 or 21-32: short_sync
+		brlo short_sync	; 10-19: short sync
+		cpi STATUS, 45
+		brlo empty_line	; 20-45: empty lines
+		cpi STATUS, 45
+		breq start_draw_picture ; 20: draw picture
+		cpi STATUS, 71
+		brlo empty_line	; 46-70 = draw empty lines
+		jmp short_sync  ; 71-82 = short sync
 	; reti is at end of all previous jumps
 
-draw_picture:
-	; save X register
-	push XH
-	push XL
-
-	; set X register to framebuffer start 0x0100
-	; (set it a byte before, because it will be incremented at first)
-	clr r27
-	ldi r26, 0xFF
-
-	; start 304 picture lines
-	ldi LINE_COUNTER, 152	; line counter
-	h_picture_loop:
-		; ***************** DRAW FIRST LINE *********************
-
-		; **** start line sync: 4uS, 96 cycles @ 24Mhz
-		; video pin goes low before sync
-		clr VG_HIGH_ACCUM										; 1 cycle
-		out VIDEO_PORT_OUT, VG_HIGH_ACCUM						; 1 cycle
-
-		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-		ldi VG_HIGH_ACCUM, 31									; 1 cycle
-		l_sync_pulse_loop: ; requires 3 cpu cycles
-			dec VG_HIGH_ACCUM									; 1 cycle
-			brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
-		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-		; **** end line sync
-
-		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
-		; leave time at the end for line setup and draw_line call
-		ldi VG_HIGH_ACCUM, BACK_PORCH_DELAY/3									; 1 cycle
-		l_sync_back_porch_loop:
-			dec VG_HIGH_ACCUM									; 1 cycle
-			brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
-		; **** end back porch
-
-		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
-
-
-
-		; ***************** DRAW SECOND LINE *********************
-
-		; **** start line sync: 4uS, 96 cycles @ 24Mhz
-		; video pin goes low before sync
-		clr VG_HIGH_ACCUM										; 1 cycle
-		out VIDEO_PORT_OUT, VG_HIGH_ACCUM						; 1 cycle
-
-		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
-		ldi VG_HIGH_ACCUM, 31									; 1 cycle
-		l_sync_pulse_loop2: ; requires 3 cpu cycles
-			dec VG_HIGH_ACCUM									; 1 cycle
-			brne l_sync_pulse_loop2  								; 2 cycle if true, 1 if false
-		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
-		; **** end line sync
-
-		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
-		; leave time at the end for line setup and draw_line call
-		ldi VG_HIGH_ACCUM, BACK_PORCH_DELAY/3									; 1 cycle
-		l_sync_back_porch_loop2:
-			dec VG_HIGH_ACCUM									; 1 cycle
-			brne l_sync_back_porch_loop2  							; 2 cycle if true, 1 if false
-		; **** end back porch
-
-		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
-
-		dec LINE_COUNTER ; decrement line countr					; 1 cycle
-		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
-	; end picture lines
-
-	; restore X register
-	pop XL
-	pop XH
-
-	; video pin goes low before sync
-	clr VG_HIGH_ACCUM											; 1 cycle
-	out VIDEO_PORT_OUT, VG_HIGH_ACCUM							; 1 cycle
-
-	; immediately start first end-screen short sync:
-	inc STATUS
-	jmp short_sync
-	; reti is in short_sync
-; end draw_picture
+start_draw_picture:
+	jmp draw_picture	; the breq instruction can branch only relatively -63 to +64
 
 long_sync:
 	; long sync: 30uS low (719 cycles @ 24Mhz), 2uS high (48 cycles @ 24Mhz)
@@ -191,6 +121,89 @@ short_sync:
 		; clear BUSY pin to indicate the mc is again responsive from now on
 		cbi PORTD, BUSY_PIN
 		reti
+
+empty_line:
+	; line sync: 4uS low (96 cycles @ 24Mhz), 60uS high (1440 cycles @ 24Mhz)
+	sbis PORTC, SYNC_PIN	; if sync is high (sync is not occuring) skip next line
+	jmp empty_line_end
+	; sync pin is high (sync is not occuring)
+	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+	; set timer in 2uS (reset timer counter)
+	ldi r27, high(TIMER_DELAY_4US)
+	ldi r26, low(TIMER_DELAY_4US)
+	sts	TCNT1H,r27
+	sts	TCNT1L,r26
+	; clear BUSY pin to indicate the mc is again responsive from now on
+	cbi PORTD, BUSY_PIN
+	reti
+
+	empty_line_end:
+		; sync pin is low (sync is occuring)
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; set timer in 30uS:
+		ldi r27, high(TIMER_DELAY_60US)
+		ldi r26, low(TIMER_DELAY_60US)
+		sts	TCNT1H,r27
+		sts	TCNT1L,r26
+		; clear BUSY pin to indicate the mc is again responsive from now on
+		cbi PORTD, BUSY_PIN
+		reti
+
+draw_picture:
+	; save X register
+	push XH
+	push XL
+
+	; set X register to framebuffer start 0x0100
+	; (set it a byte before, because it will be incremented at first)
+	clr r27
+	ldi r26, 0xFF
+
+	; start 304 picture lines
+	ldi LINE_COUNTER, 232	; line counter
+	h_picture_loop:
+		; ***************** DRAW FIRST LINE *********************
+
+		; **** start line sync: 4uS, 96 cycles @ 24Mhz
+		; video pin goes low before sync
+		clr VG_HIGH_ACCUM										; 1 cycle
+		out VIDEO_PORT_OUT, VG_HIGH_ACCUM						; 1 cycle
+
+		cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
+		ldi VG_HIGH_ACCUM, 31									; 1 cycle
+		l_sync_pulse_loop: ; requires 3 cpu cycles
+			dec VG_HIGH_ACCUM									; 1 cycle
+			brne l_sync_pulse_loop  								; 2 cycle if true, 1 if false
+		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
+		; **** end line sync
+
+		; **** start line back porch: 8uS, 192 cycles @ 24Mhz
+		; leave time at the end for line setup and draw_line call
+		ldi VG_HIGH_ACCUM, BACK_PORCH_DELAY/3									; 1 cycle
+		l_sync_back_porch_loop:
+			dec VG_HIGH_ACCUM									; 1 cycle
+			brne l_sync_back_porch_loop  							; 2 cycle if true, 1 if false
+		; **** end back porch
+
+		call draw_line	; 3 cycles (+ 3 to come back to on_line_drawn)
+
+		dec LINE_COUNTER ; decrement line countr					; 1 cycle
+		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
+	; end picture lines
+
+	; restore X register
+	pop XL
+	pop XH
+
+	; video pin goes low before sync
+	clr VG_HIGH_ACCUM											; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM							; 1 cycle
+
+	; immediately start first end-screen short sync:
+	inc STATUS
+	jmp short_sync
+	; reti is in short_sync
+; end draw_picture
 
 
 draw_line:
