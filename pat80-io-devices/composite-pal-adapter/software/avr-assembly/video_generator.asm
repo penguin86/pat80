@@ -8,7 +8,7 @@
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
 
 ; This module generates a Composite PAL monochrome signal with a resolution
-; of 416x304 pixels of which only 376x232 pizels are visible (= 46x29 characters).
+; of 416x304 pixels of which only 368x256 pizels are visible (= 46x29 characters).
 ; The signal is generated using 16-bit Timer1 and interrupts.
 
 
@@ -43,8 +43,8 @@ on_tim1_ovf:
 	sbi PORTD, BUSY_PIN
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
 	inc STATUS
-	; if STATUS >= 176 then STATUS=0
-	cpi STATUS, 178	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
+	; if STATUS >= 152 then STATUS=0
+	cpi STATUS, 152	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
 	brlo switch_status
 	clr STATUS
 	; check status and decide what to do
@@ -56,9 +56,9 @@ on_tim1_ovf:
 		cpi STATUS, 92
 		brlo empty_line	; 20-91: empty lines
 		breq start_draw_picture ; 92: draw picture
-		cpi STATUS, 164
-		brlo empty_line	; 93-165 = draw empty lines
-		jmp short_sync  ; 166-177 = short sync
+		cpi STATUS, 140
+		brlo empty_line	; 93-139 = draw empty lines
+		jmp short_sync  ; 140-151 = short sync
 	; reti is at end of all previous jumps
 
 start_draw_picture:
@@ -159,7 +159,7 @@ draw_picture:
 	ldi r26, 0xFF
 
 	; start 304 picture lines
-	ldi LINE_COUNTER, 232	; line counter
+	ldi LINE_COUNTER, 256	; line counter
 	h_picture_loop:
 		; ***************** DRAW FIRST LINE *********************
 
