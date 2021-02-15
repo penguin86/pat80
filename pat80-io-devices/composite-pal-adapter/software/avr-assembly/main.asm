@@ -26,8 +26,8 @@
 
 ; *** reserved registers ***
 ; Cursor Position
-;     POS_COLUMN (0-103) represents the column on a pair of rows: 0 to 51 is the first row, 52 to 103 the second one
-;     POS_ROWP (0-152) represent the pair of rows. POS_ROWP = 5 means the 10th and 11th rows
+;     POS_COLUMN (0-103) represents the column on a pair of rows: 0 to 46 is the first row, 47 to 92 the second one
+;     POS_ROWP (0-128) represent the pair of rows. POS_ROWP = 5 means the 10th and 11th rows
 ;     POS_FINE represents fine position (bit inside coarse-position-pointed chunk) in graphic mode.
 .def POS_COLUMN = r21
 .def POS_ROWP = r20
@@ -87,21 +87,7 @@ main:
 		cpi r26, 0b11000000
 		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
-	; test draw character routine
-	call cursor_pos_home
-	ldi r19, 14
-	dctest:
-		ldi r18, 0x21
-		draw_chars:
-			mov HIGH_ACCUM, r18
-			call draw_char
-			inc r18
-			cpi r18, 0x7E
-			brne draw_chars
-		dec r19
-		brne dctest
-
-
+	
 
 	; *** timer setup (use 16-bit counter TC1) ***
 	; The Power Reduction TC1 and TC3 bits in the Power Reduction Registers (PRR0.PRTIM1 and
@@ -120,6 +106,39 @@ main:
 
 	; Wait for data (it never exits)
 	; jmp comm_init
+
+
+
+	; test draw character routine
+	call cursor_pos_home
+	dctest:
+		ldi r18, 0x21
+		draw_chars:
+			mov HIGH_ACCUM, r18
+			call draw_char
+			inc r18
+			cpi r18, 0x7E
+			brne dc_continue
+			ldi r18, 0x21
+			dc_continue:
+			; wait
+			ser r19
+			dc_wait_loop_1:
+				ser r20
+				dc_wait_loop_2:
+					nop
+					nop
+					nop
+					nop
+					dec r20
+					brne dc_wait_loop_2
+				dec r19
+				brne dc_wait_loop_1
+			brne draw_chars
+		jmp dctest
+
+
+
 
 	forever:
 		jmp forever

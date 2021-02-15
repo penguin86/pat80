@@ -9,7 +9,7 @@
 ; INTERNAL POINTER:
 ; Internally, the last screen position is represented by 24 bits in two registers:
 ; POS_COARSE: Register Y (16-bit, r31 and r30): Coarse position. Points to one of the chunks
-;    (character columns). 52 chunks per row, 304 rows. Used for character position, as
+;    (character columns). 46 chunks per row, 304 rows. Used for character position, as
 ;    1 chunk = 1 byte = 1 character.
 ; POS_FINE: Register r24: Fine position. Represents the bit inside the chunk selected by POS_COARSE.
 ;    Ignored in character mode (the character is always aligned to column). Used in graphic mode.

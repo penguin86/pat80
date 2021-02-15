@@ -4,7 +4,7 @@
 ; *******************************************
 
 ; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
-; Every line, for 52 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
+; Every line, for 46 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
 
 ; This module generates a Composite PAL monochrome signal with a resolution
@@ -153,16 +153,13 @@ draw_picture:
 	push XH
 	push XL
 
-	; set X register to framebuffer start 0x0100
-	; (set it a byte before, because it will be incremented at first)
-	clr r27
-	ldi r26, 0xFF
+	; set X register to framebuffer start
+	ldi r27, high(FRAMEBUFFER)
+	ldi r26, low(FRAMEBUFFER)
 
 	; start 304 picture lines
 	ldi LINE_COUNTER, 256	; line counter
 	h_picture_loop:
-		; ***************** DRAW FIRST LINE *********************
-
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
 		; video pin goes low before sync
 		clr VG_HIGH_ACCUM										; 1 cycle

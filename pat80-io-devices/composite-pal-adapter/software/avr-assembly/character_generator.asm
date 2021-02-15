@@ -48,7 +48,7 @@ draw_char:
 	; Char drawing is complete. Increment cursor position
 	inc POS_COLUMN
 	; Check if end of line
-	cpi POS_COLUMN, 52
+	cpi POS_COLUMN, LINE_COLUMNS
 	breq draw_char_eol
 	; Reset chunk position to first glyph line of next column
 	mov YL, r2	; first restore Y
@@ -63,7 +63,7 @@ draw_char:
 		brne draw_char_end
 		cpi YL, low(FRAMEBUFFER_END + 1)
 		brne draw_char_end
-		; End of screen reached! Scroll framebuffer by 1 line (=52*FONT_HEIGHT bytes)
+		; End of screen reached! Scroll framebuffer by 1 line (=46*FONT_HEIGHT bytes)
 		; TODO
 	draw_char_end:
 		ret
