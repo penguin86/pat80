@@ -56,16 +56,19 @@ draw_char:
 	adiw YH:YL,1	; just increment pre-char-drawing-saved chunk cursor position by 1
 	ret
 	draw_char_eol:
+		; Check if end of screen
+		cpi YH, high(FRAMEBUFFER_END)
+		brne draw_char_end
+		cpi YL, low(FRAMEBUFFER_END)
+		brne draw_char_end
+		; End of screen reached! Scroll framebuffer by 1 line
+		call scroll_screen
+		ret
+
+	draw_char_end:
+		; end of line
 		clr POS_COLUMN	; reset column to 0
 		adiw YH:YL,1 ; increment chunk cursor position by 1 (begin of next line on screen)
-		; Check if end of screen
-		cpi YH, high(FRAMEBUFFER_END + 1)
-		brne draw_char_end
-		cpi YL, low(FRAMEBUFFER_END + 1)
-		brne draw_char_end
-		; End of screen reached! Scroll framebuffer by 1 line (=46*FONT_HEIGHT bytes)
-		; TODO
-	draw_char_end:
 		ret
 
 ; Sets the cursor to 0,0 and clears fine position
@@ -102,6 +105,47 @@ set_framebuffer_pointer_to_text_cursor:
 ; Moves cursor to start of following screen line
 ; Takes care of particular cases, i.e. end of screen (shifts all screen up by one line)
 draw_carriage_return:
+	; Set memory pointer to start of line
+	sub YL, POS_COLUMN
+	sbci YH, 0
+	; Set cursor to start of current line
+	subi POS_COLUMN, LINE_COLUMNS
+	; Go to next line
+	ldi HIGH_ACCUM, high(LINE_COLUMNS*FONT_HEIGHT)
+	add YH, HIGH_ACCUM
+	ldi HIGH_ACCUM, low(LINE_COLUMNS*FONT_HEIGHT)
+	adc YL, HIGH_ACCUM
 	ret
 
+; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
+; and clears the last line (FRAMEBUFFER_END - LINE_COLUMNS*FONT_HEIGHT bytes)
+scroll_screen:
+	clr POS_COLUMN	; cursor to first column
+	; "Read" Pointer to first char of second line
+	ldi YH, high(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	ldi YL, low(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	; "Write" Pointer to first char of first line
+	ldi XH, high(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	ldi XL, low(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	; Copy data
+	scroll_screen_copy_loop:
+		ld A, Y+
+		st Z+, A
+		cpi r31, high(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+		brne scroll_screen_copy_loop
+		cpi r30, low(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+		brne scroll_screen_copy_loop
+	; All the lines have been "shifted" up by one line.
+	; The first line is lost and the last is duplicate. Clear the last.
+	clr A
+	scroll_screen_clear_loop:
+		st Z+, A
+		cpi r31, high(FRAMEBUFFER_END)
+		brne scroll_screen_clear_loop
+		cpi r30, low(FRAMEBUFFER_END)
+		brne scroll_screen_clear_loop
+	; Last line cleared. Leave cursor pointer to last line start
+	ldi YH, high(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+	ldi YL, low(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+	ret
 

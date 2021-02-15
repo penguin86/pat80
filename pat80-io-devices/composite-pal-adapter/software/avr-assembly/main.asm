@@ -111,25 +111,22 @@ main:
 
 	; test draw character routine
 	call cursor_pos_home
+	ldi r18, 0x41
 	dctest:
-		ldi r18, 0x21
 		draw_chars:
 			mov HIGH_ACCUM, r18
 			call draw_char
 			inc r18
-			cpi r18, 0x7E
+			cpi r18, 0x5B
 			brne dc_continue
-			ldi r18, 0x21
+			ldi r18, 0x41
+			;call draw_carriage_return
 			dc_continue:
 			; wait
 			ser r19
 			dc_wait_loop_1:
 				ser r20
 				dc_wait_loop_2:
-					nop
-					nop
-					nop
-					nop
 					dec r20
 					brne dc_wait_loop_2
 				dec r19
