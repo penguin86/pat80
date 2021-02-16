@@ -26,8 +26,8 @@
 
 ; *** reserved registers ***
 ; Cursor Position
-;     POS_COLUMN (0-103) represents the column on a pair of rows: 0 to 46 is the first row, 47 to 92 the second one
-;     POS_ROWP (0-128) represent the pair of rows. POS_ROWP = 5 means the 10th and 11th rows
+;     POS_COLUMN (0-46) represents the character/chunk column
+;     POS_ROWP (0-255) represent the chunk row. The caracter row is POS_ROWP/FONT_HEIGHT
 ;     POS_FINE represents fine position (bit inside coarse-position-pointed chunk) in graphic mode.
 .def POS_COLUMN = r21
 .def POS_ROWP = r20
@@ -110,6 +110,10 @@ main:
 
 
 	; test draw character routine
+	call draw_carriage_return
+	call draw_carriage_return
+	call draw_carriage_return
+
 	call cursor_pos_home
 	ldi r18, 0x41
 	dctest:
@@ -120,7 +124,7 @@ main:
 			cpi r18, 0x5B
 			brne dc_continue
 			ldi r18, 0x41
-			;call draw_carriage_return
+			call draw_carriage_return
 			dc_continue:
 			; wait
 			ser r19

@@ -84,9 +84,9 @@ cursor_pos_home:
 
 ; Updates framebuffer pointer (Y) to point to current text cursor position (POS_COLUMN, POS_ROWP)
 ; Usage:
-;    ldi POS_COLUMN, 55
+;    ldi POS_COLUMN, 10
 ;    ldi POS_ROWP, 13
-;    call set_framebuffer_pointer_to_text_cursor ; (sets cursor to 4th character of second row in 13th row-pair = column 4, row 27 on screen)
+;    call set_framebuffer_pointer_to_text_cursor
 ; @modifies Y, R0, R1
 set_framebuffer_pointer_to_text_cursor:
 	; Load framebuffer start position to Y
@@ -109,12 +109,15 @@ draw_carriage_return:
 	sub YL, POS_COLUMN
 	sbci YH, 0
 	; Set cursor to start of current line
-	subi POS_COLUMN, LINE_COLUMNS
+	clr POS_COLUMN
 	; Go to next line
 	ldi HIGH_ACCUM, high(LINE_COLUMNS*FONT_HEIGHT)
 	add YH, HIGH_ACCUM
 	ldi HIGH_ACCUM, low(LINE_COLUMNS*FONT_HEIGHT)
 	adc YL, HIGH_ACCUM
+	; Update row pointer
+	ldi HIGH_ACCUM, FONT_HEIGHT
+	add POS_ROWP, HIGH_ACCUM
 	ret
 
 ; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
