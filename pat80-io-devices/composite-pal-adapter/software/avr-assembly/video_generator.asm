@@ -154,10 +154,10 @@ draw_picture:
 	push XL
 
 	; set X register to framebuffer start
-	ldi r27, high(FRAMEBUFFER)
-	ldi r26, low(FRAMEBUFFER)
+	ldi XH, high(FRAMEBUFFER)
+	ldi XL, low(FRAMEBUFFER)
 
-	; start 304 picture lines
+	; start 256 picture lines
 	ldi LINE_COUNTER, SCREEN_HEIGHT-1	; line counter
 	h_picture_loop:
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz

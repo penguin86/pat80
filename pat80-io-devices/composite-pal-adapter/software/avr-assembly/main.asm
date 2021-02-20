@@ -52,7 +52,7 @@
 
 ; memory
 .equ FRAMEBUFFER = 0x0100
-.equ FRAMEBUFFER_END = 0x2AB0
+.equ FRAMEBUFFER_END = 0x2F00
 .equ SCREEN_HEIGHT = 256
 
 ; start vector
@@ -64,6 +64,8 @@
 .org 0x40
 ; main program
 main:
+	; **** I/O SETUP ****
+
 	; pins setup
 	sbi	DDRC, SYNC_PIN		; set pin as output
 	sbi	DDRC, DEBUG_PIN		; set pin as output
@@ -74,23 +76,30 @@ main:
 	ldi	HIGH_ACCUM, 0x00
 	out DDRB, HIGH_ACCUM			; set port as input (used as data bus)
 
+
+	; **** MEMORY SETUP ****
+
 	; clear ram
 	;*** Load data into ram ***
 	; Set X to 0x0100
-	ldi r27, high(FRAMEBUFFER)
-	ldi r26, low(FRAMEBUFFER)
-	load_mem_loop:
-		clr r17
-		st X+, r17
-		; if reached the last framebuffer byte, exit cycle
-		cpi r27, 0b00111110
-		brne load_mem_loop	; if not 0, repeat h_picture_loop
-		cpi r26, 0b11000000
-		brne load_mem_loop	; if not 0, repeat h_picture_loop
+	; ldi XH, high(FRAMEBUFFER)
+	; ldi XL, low(FRAMEBUFFER)
+	; load_mem_loop:
+	; 	clr r17
+	; 	st X+, r17
+	; 	; if reached the last framebuffer byte, exit cycle
+	; 	cpi XH, 0b00111110
+	; 	brne load_mem_loop	; if not 0, repeat h_picture_loop
+	; 	cpi XL, 0b11000000
+	; 	brne load_mem_loop	; if not 0, repeat h_picture_loop
 
 	
 
-	; *** timer setup (use 16-bit counter TC1) ***
+
+
+	; **** TIMERS AND DRAWING IMAGE ROUTINES SETUP ****
+
+	; Timer setup (use 16-bit counter TC1)
 	; The Power Reduction TC1 and TC3 bits in the Power Reduction Registers (PRR0.PRTIM1 and
 	; PRR1.PRTIM3) must be written to zero to enable the TC1 and TC3 module.
 	ldi HIGH_ACCUM, 0b00000000
@@ -105,10 +114,17 @@ main:
     SEI
 	; Timer setup completed.
 
+
+
+
+	; **** MAIN ROUTINE ****
+
 	; Wait for data (it never exits)
 	; jmp comm_init
 
 
+	; draw example image
+	call draw_cat
 
 	; test draw character routine
 	call draw_carriage_return
@@ -139,7 +155,7 @@ main:
 			brne draw_chars
 		jmp dctest
 
-
+	
 
 
 	forever:
@@ -150,5 +166,6 @@ main:
 
 .include "video_generator.asm" ; Asyncronous timer-interrupt-based video generation
 .include "character_generator.asm" ; Character generator
-.include "communication.asm" ; Communication with Pat80
+;.include "communication.asm" ; Communication with Pat80
 .include "font.asm"	; Font face
+.include "example_data/cat.asm"	; Cat image
