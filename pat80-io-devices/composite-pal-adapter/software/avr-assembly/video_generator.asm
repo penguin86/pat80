@@ -3,12 +3,12 @@
 ; *        Video generator module           *
 ; *******************************************
 
-; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/
+; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/ and http://www.kolumbus.fi/pami1/video/pal_ntsc.html
 ; Every line, for 46 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
 
 ; This module generates a Composite PAL monochrome signal with a resolution
-; of 416x304 pixels of which only 368x256 pizels are visible (= 46x29 characters).
+; of 416x304 pixels of which only 368x248 pixels are visible (= 46x28 characters).
 ; The signal is generated using 16-bit Timer1 and interrupts.
 
 
@@ -32,7 +32,7 @@
 .equ TIMER_DELAY_60US = 65535 - 1409 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_30US = 65535 - 690 	; 719 cycles @ 24Mhz (minus overhead)
 .equ TIMER_DELAY_2US = 65535 - 17		; 48 cycles @ 24Mhz (minus overhead)
-.equ TIMER_DELAY_4US = 65535 - 64		; 96 cycles @ 24Mhz (minus overhead)
+.equ TIMER_DELAY_4US = 65535 - 60		; 96 cycles @ 24Mhz (minus overhead)
 .equ BACK_PORCH_DELAY = 234				; 186 cycles back porch + 48 cycles to leave 2 chunks empty (image padding)
 
 
@@ -43,8 +43,8 @@ on_tim1_ovf:
 	sbi PORTD, BUSY_PIN
 	; called by timer 1 two times per line (every 32 uS) during hsync, unless drawing picture.
 	inc STATUS
-	; if STATUS >= 152 then STATUS=0
-	cpi STATUS, 152	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
+	; if STATUS > 146 then STATUS=0
+	cpi STATUS, 147	; TODO: Added a seventh sync pulse at end of screen because at the first short sync after the image, the timer doesn't tick at the right time
 	brlo switch_status
 	clr STATUS
 	; check status and decide what to do
@@ -53,12 +53,12 @@ on_tim1_ovf:
 		brlo long_sync	; 0-9: long sync
 		cpi STATUS, 20
 		brlo short_sync	; 10-19: short sync
-		cpi STATUS, 92
-		brlo empty_line	; 20-91: empty lines
-		breq start_draw_picture ; 92: draw picture
-		cpi STATUS, 140
-		brlo empty_line	; 93-139 = draw empty lines
-		jmp short_sync  ; 140-151 = short sync
+		cpi STATUS, 90
+		brlo empty_line	; 20-89: empty lines
+		breq start_draw_picture ; 90: draw picture
+		cpi STATUS, 135
+		brlo empty_line	; 91-134 = draw empty lines
+		jmp short_sync  ; 135-146 = short sync
 	; reti is at end of all previous jumps
 
 start_draw_picture:
@@ -157,7 +157,7 @@ draw_picture:
 	ldi XH, high(FRAMEBUFFER)
 	ldi XL, low(FRAMEBUFFER)
 
-	; start 256 picture lines
+	; start 248 picture lines
 	ldi LINE_COUNTER, SCREEN_HEIGHT-1	; line counter
 	h_picture_loop:
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
