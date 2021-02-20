@@ -53,6 +53,7 @@
 ; memory
 .equ FRAMEBUFFER = 0x0100
 .equ FRAMEBUFFER_END = 0x2AB0
+.equ SCREEN_HEIGHT = 256
 
 ; start vector
 .org 0x0000

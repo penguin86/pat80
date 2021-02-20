@@ -158,7 +158,7 @@ draw_picture:
 	ldi r26, low(FRAMEBUFFER)
 
 	; start 304 picture lines
-	ldi LINE_COUNTER, 255	; line counter
+	ldi LINE_COUNTER, SCREEN_HEIGHT-1	; line counter
 	h_picture_loop:
 		; **** start line sync: 4uS, 96 cycles @ 24Mhz
 		; video pin goes low before sync

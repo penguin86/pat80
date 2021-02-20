@@ -56,19 +56,19 @@ draw_char:
 	adiw YH:YL,1	; just increment pre-char-drawing-saved chunk cursor position by 1
 	ret
 	draw_char_eol:
-		; Check if end of screen
-		cpi YH, high(FRAMEBUFFER_END)
-		brne draw_char_end
-		cpi YL, low(FRAMEBUFFER_END)
-		brne draw_char_end
-		; End of screen reached! Scroll framebuffer by 1 line
-		call scroll_screen
-		ret
-
-	draw_char_end:
 		; end of line
-		clr POS_COLUMN	; reset column to 0
 		adiw YH:YL,1 ; increment chunk cursor position by 1 (begin of next line on screen)
+		clr POS_COLUMN	; reset column to 0
+		; check if reached end of screen
+		cpi POS_ROWP, SCREEN_HEIGHT-FONT_HEIGHT
+		breq draw_char_eos
+		; if not end of screen, increment row
+		ldi HIGH_ACCUM, FONT_HEIGHT
+		add POS_ROWP, HIGH_ACCUM
+		ret
+	draw_char_eos:
+		; end of screen: scroll screen but leave line pointer to last line
+		call scroll_screen
 		ret
 
 ; Sets the cursor to 0,0 and clears fine position
@@ -122,14 +122,15 @@ draw_carriage_return:
 
 ; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
 ; and clears the last line (FRAMEBUFFER_END - LINE_COLUMNS*FONT_HEIGHT bytes)
+; @uses A, Z
 scroll_screen:
 	clr POS_COLUMN	; cursor to first column
 	; "Read" Pointer to first char of second line
 	ldi YH, high(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
 	ldi YL, low(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
 	; "Write" Pointer to first char of first line
-	ldi XH, high(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
-	ldi XL, low(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	ldi XH, high(FRAMEBUFFER)
+	ldi XL, low(FRAMEBUFFER)
 	; Copy data
 	scroll_screen_copy_loop:
 		ld A, Y+
