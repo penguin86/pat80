@@ -17,10 +17,6 @@ draw_char:
 	; But all the fonts are 1 byte large, so a glyph is 1*height bytes:
 	; glyph_pointer = FONT + (ascii_code * FONT_HEIGHT)
 
-	; Save current chunk cursor position (Y)
-	mov r2, YL
-	mov r3, YH
-
 	; Load first glyph position on Z
 	ldi ZH, high(FONT<<1)
 	ldi ZL, low(FONT<<1)
@@ -31,6 +27,8 @@ draw_char:
 	add ZL, r0
 	adc ZH, r1
 	; Z contain our glyph's first byte position: draw it
+	; Obtain drawing position in framebuffer memory (in Y)
+	call update_mem_pointer
 	; The drawing consist of FONT_HEIGHT cycles. Every glyph byte is placed on its own line
 	; on screen. To do this, we place it LINE_COLUMNS bytes after the previous one.
 	ldi HIGH_ACCUM, FONT_HEIGHT
@@ -49,22 +47,17 @@ draw_char:
 	inc POS_COLUMN
 	; Check if end of line
 	cpi POS_COLUMN, LINE_COLUMNS
-	breq draw_char_eol
-	; Reset chunk position to first glyph line of next column
-	mov YL, r2	; first restore Y
-	mov YH, r3
-	adiw YH:YL,1	; just increment pre-char-drawing-saved chunk cursor position by 1
+	brsh draw_char_eol
 	ret
 	draw_char_eol:
 		; end of line
-		adiw YH:YL,1 ; increment chunk cursor position by 1 (begin of next line on screen)
 		clr POS_COLUMN	; reset column to 0
-		; check if reached end of screen
-		cpi POS_ROWP, SCREEN_HEIGHT-FONT_HEIGHT
-		breq draw_char_eos
-		; if not end of screen, increment row
+		; Move cursor to next line
 		ldi HIGH_ACCUM, FONT_HEIGHT
 		add POS_ROWP, HIGH_ACCUM
+		; check if reached end of screen
+		cpi POS_ROWP, SCREEN_HEIGHT
+		brsh draw_char_eos
 		ret
 	draw_char_eos:
 		; end of screen: scroll screen but leave line pointer to last line
@@ -76,60 +69,28 @@ cursor_pos_home:
 	; Set all positions to 0
 	clr POS_COLUMN
 	clr POS_ROWP
-	; Load framebuffer start position to Y
-	ldi YH, high(FRAMEBUFFER)
-	ldi YL, low(FRAMEBUFFER)
 	ret
-
-; Updates framebuffer pointer (Y) to point to current text cursor position (POS_COLUMN, POS_ROWP)
-; Usage:
-;    ldi POS_COLUMN, 10
-;    ldi POS_ROWP, 13
-;    call set_framebuffer_pointer_to_text_cursor
-; @modifies Y, R0, R1
-; set_framebuffer_pointer_to_text_cursor:
-; 	; Load framebuffer start position to Y
-; 	ldi YH, high(FRAMEBUFFER)
-; 	ldi YL, low(FRAMEBUFFER)
-; 	; Obtain offset between 0,0 and current cursor position
-; 	mul POS_COLUMN, POS_ROWP	; result is in r1,r0	; NOTE: wrong, multiplicate with bytes per row
-; 	; Sum offset to Y
-; 	add YL, r0
-; 	adc YH, r1
-; 	ret
-
-
 
 ; Draws a newline
 ; Moves cursor to start of following screen line
 ; Takes care of particular cases, i.e. end of screen (shifts all screen up by one line)
-draw_carriage_return:
-	; Check if end of screen
-	cpi POS_ROWP, SCREEN_HEIGHT
-	brne draw_carriage_return_not_eos
-	call scroll_screen
-	dec POS_ROWP ; compensate for next inc
-	draw_carriage_return_not_eos:
-		; Move cursor to line start
-		ldi POS_COLUMN, 0
-		; Move cursor to next line
-		ldi HIGH_ACCUM, FONT_HEIGHT
-		add POS_ROWP, HIGH_ACCUM
-		; Compute memory pointer offset
-		mul POS_COLUMN, POS_ROWP	; result overwrites r0 and r1!
-		; Set pointer to start of framebuffer
-		ldi ZL, low(FRAMEBUFFER)
-		ldi ZH, high(FRAMEBUFFER)
-		; Add offset to pointer
-		add ZL, r0
-		adc ZH, r1
-	ret
+; draw_carriage_return:
+; 	; Move cursor to line start
+; 	ldi POS_COLUMN, 0
+; 	; Move cursor to next line
+; 	ldi HIGH_ACCUM, FONT_HEIGHT
+; 	add POS_ROWP, HIGH_ACCUM
+; 	; Check if end of screen
+; 	cpi POS_ROWP, SCREEN_HEIGHT
+; 	brsh draw_carriage_return_eos
+; 	ret
+; 	draw_carriage_return_eos:
+; 	call scroll_screen
 
 ; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
 ; and clears the last line (FRAMEBUFFER_END - LINE_COLUMNS*FONT_HEIGHT bytes)
 ; @uses A, Z
 scroll_screen:
-	clr POS_COLUMN	; cursor to first column
 	; "Read" Pointer to first char of second line
 	ldi YH, high(FRAMEBUFFER+(LINE_COLUMNS*FONT_HEIGHT))
 	ldi YL, low(FRAMEBUFFER+(LINE_COLUMNS*FONT_HEIGHT))
@@ -140,9 +101,9 @@ scroll_screen:
 	scroll_screen_copy_loop:
 		ld A, Y+
 		st Z+, A
-		cpi ZH, high(FRAMEBUFFER_END-(LINE_COLUMNS*FONT_HEIGHT))
+		cpi YH, high(FRAMEBUFFER_END)
 		brne scroll_screen_copy_loop
-		cpi ZL, low(FRAMEBUFFER_END-(LINE_COLUMNS*FONT_HEIGHT))
+		cpi YL, low(FRAMEBUFFER_END)
 		brne scroll_screen_copy_loop
 	; All the lines have been "shifted" up by one line.
 	; The first line is lost and the last is duplicate. Clear the last.
@@ -153,8 +114,26 @@ scroll_screen:
 		brne scroll_screen_clear_loop
 		cpi r30, low(FRAMEBUFFER_END)
 		brne scroll_screen_clear_loop
-	; Last line cleared. Leave cursor pointer to last line start
-	ldi YH, high(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
-	ldi YL, low(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+	; Last line cleared. Set cursor position
+	clr POS_COLUMN	; cursor to first column
+	ldi POS_ROWP, SCREEN_HEIGHT-FONT_HEIGHT
 	ret
 
+; Sets the Y register to point to the cursor's first line memory position
+; The cursor's position is represented by registers POS_COLUMN and POS_ROWP
+update_mem_pointer:
+	; Compute memory pointer offset: offset = (LINE_COLUMNS*POS_ROWP)+POS_COLUMN
+	; LINE_COLUMNS*POS_ROWP
+	ldi HIGH_ACCUM, LINE_COLUMNS
+	mul HIGH_ACCUM, POS_ROWP	; result overwrites r0 and r1!
+	; ...+POS_COLUMN
+	add r0, POS_COLUMN
+	clr HIGH_ACCUM
+	adc r0, HIGH_ACCUM
+	; Set pointer to start of framebuffer
+	ldi YL, low(FRAMEBUFFER)
+	ldi YH, high(FRAMEBUFFER)
+	; Add offset to pointer
+	add YL, r0
+	adc YH, r1
+	ret

@@ -11,7 +11,6 @@ draw_cat:
         ; wait
         ser r19
         cat_wait_loop_1:
-            ldi r20, 32
             dec r19
             brne cat_wait_loop_1
 		; if reached the last framebuffer byte, exit cycle

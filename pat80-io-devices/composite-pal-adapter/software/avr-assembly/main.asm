@@ -79,17 +79,17 @@ main:
 
 	; clear ram
 	;*** Load data into ram ***
-	; Set X to 0x0100
-	; ldi XH, high(FRAMEBUFFER)
-	; ldi XL, low(FRAMEBUFFER)
-	; load_mem_loop:
-	; 	clr r17
-	; 	st X+, r17
-	; 	; if reached the last framebuffer byte, exit cycle
-	; 	cpi XH, 0b00111110
-	; 	brne load_mem_loop	; if not 0, repeat h_picture_loop
-	; 	cpi XL, 0b11000000
-	; 	brne load_mem_loop	; if not 0, repeat h_picture_loop
+	Set X to 0x0100
+	ldi XH, high(FRAMEBUFFER)
+	ldi XL, low(FRAMEBUFFER)
+	load_mem_loop:
+		clr r17
+		st X+, r17
+		; if reached the last framebuffer byte, exit cycle
+		cpi XH, 0b00111110
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+		cpi XL, 0b11000000
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
 
 	
 
@@ -122,34 +122,27 @@ main:
 
 
 	; draw example image
-	call draw_cat
+	;call draw_cat
 
 	; test draw character routine
-	call draw_carriage_return
-	call draw_carriage_return
-	call draw_carriage_return
-
 	call cursor_pos_home
-	ldi r18, 0x41
 	dctest:
+		ldi r18, 0x41
 		draw_chars:
 			mov HIGH_ACCUM, r18
 			call draw_char
-			inc r18
-			cpi r18, 0x5B
-			brne dc_continue
-			ldi r18, 0x41
-			call draw_carriage_return
 			dc_continue:
 			; wait
 			ser r19
 			dc_wait_loop_1:
-				ser r20
+				ldi r24, 64
 				dc_wait_loop_2:
-					dec r20
+					dec r24
 					brne dc_wait_loop_2
 				dec r19
 				brne dc_wait_loop_1
+			inc r18
+			cpi r18, 0x5B
 			brne draw_chars
 		jmp dctest
 
