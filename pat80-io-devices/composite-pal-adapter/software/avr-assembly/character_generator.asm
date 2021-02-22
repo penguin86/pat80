@@ -74,18 +74,19 @@ cursor_pos_home:
 ; Draws a newline
 ; Moves cursor to start of following screen line
 ; Takes care of particular cases, i.e. end of screen (shifts all screen up by one line)
-; draw_carriage_return:
-; 	; Move cursor to line start
-; 	ldi POS_COLUMN, 0
-; 	; Move cursor to next line
-; 	ldi HIGH_ACCUM, FONT_HEIGHT
-; 	add POS_ROWP, HIGH_ACCUM
-; 	; Check if end of screen
-; 	cpi POS_ROWP, SCREEN_HEIGHT
-; 	brsh draw_carriage_return_eos
-; 	ret
-; 	draw_carriage_return_eos:
-; 	call scroll_screen
+draw_carriage_return:
+	; Move cursor to line start
+	ldi POS_COLUMN, 0
+	; Move cursor to next line
+	ldi HIGH_ACCUM, FONT_HEIGHT
+	add POS_ROWP, HIGH_ACCUM
+	; Check if end of screen
+	cpi POS_ROWP, SCREEN_HEIGHT
+	brsh draw_carriage_return_eos
+	ret
+	draw_carriage_return_eos:
+	call scroll_screen
+	ret
 
 ; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
 ; and clears the last line (FRAMEBUFFER_END - LINE_COLUMNS*FONT_HEIGHT bytes)

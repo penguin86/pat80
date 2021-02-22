@@ -144,6 +144,7 @@ main:
 			inc r18
 			cpi r18, 0x5B
 			brne draw_chars
+		call draw_carriage_return
 		jmp dctest
 
 	
