@@ -76,7 +76,6 @@ cursor_pos_home:
 	; Set all positions to 0
 	clr POS_COLUMN
 	clr POS_ROWP
-	clr POS_FINE
 	; Load framebuffer start position to Y
 	ldi YH, high(FRAMEBUFFER)
 	ldi YL, low(FRAMEBUFFER)
@@ -88,16 +87,16 @@ cursor_pos_home:
 ;    ldi POS_ROWP, 13
 ;    call set_framebuffer_pointer_to_text_cursor
 ; @modifies Y, R0, R1
-set_framebuffer_pointer_to_text_cursor:
-	; Load framebuffer start position to Y
-	ldi YH, high(FRAMEBUFFER)
-	ldi YL, low(FRAMEBUFFER)
-	; Obtain offset between 0,0 and current cursor position
-	mul POS_COLUMN, POS_ROWP	; result is in r1,r0
-	; Sum offset to Y
-	add YL, r0
-	adc YH, r1
-	ret
+; set_framebuffer_pointer_to_text_cursor:
+; 	; Load framebuffer start position to Y
+; 	ldi YH, high(FRAMEBUFFER)
+; 	ldi YL, low(FRAMEBUFFER)
+; 	; Obtain offset between 0,0 and current cursor position
+; 	mul POS_COLUMN, POS_ROWP	; result is in r1,r0	; NOTE: wrong, multiplicate with bytes per row
+; 	; Sum offset to Y
+; 	add YL, r0
+; 	adc YH, r1
+; 	ret
 
 
 
@@ -105,19 +104,25 @@ set_framebuffer_pointer_to_text_cursor:
 ; Moves cursor to start of following screen line
 ; Takes care of particular cases, i.e. end of screen (shifts all screen up by one line)
 draw_carriage_return:
-	; Set memory pointer to start of line
-	sub YL, POS_COLUMN
-	sbci YH, 0
-	; Set cursor to start of current line
-	clr POS_COLUMN
-	; Go to next line
-	ldi HIGH_ACCUM, high(LINE_COLUMNS*FONT_HEIGHT)
-	add YH, HIGH_ACCUM
-	ldi HIGH_ACCUM, low(LINE_COLUMNS*FONT_HEIGHT)
-	adc YL, HIGH_ACCUM
-	; Update row pointer
-	ldi HIGH_ACCUM, FONT_HEIGHT
-	add POS_ROWP, HIGH_ACCUM
+	; Check if end of screen
+	cpi POS_ROWP, SCREEN_HEIGHT
+	brne draw_carriage_return_not_eos
+	call scroll_screen
+	dec POS_ROWP ; compensate for next inc
+	draw_carriage_return_not_eos:
+		; Move cursor to line start
+		ldi POS_COLUMN, 0
+		; Move cursor to next line
+		ldi HIGH_ACCUM, FONT_HEIGHT
+		add POS_ROWP, HIGH_ACCUM
+		; Compute memory pointer offset
+		mul POS_COLUMN, POS_ROWP	; result overwrites r0 and r1!
+		; Set pointer to start of framebuffer
+		ldi ZL, low(FRAMEBUFFER)
+		ldi ZH, high(FRAMEBUFFER)
+		; Add offset to pointer
+		add ZL, r0
+		adc ZH, r1
 	ret
 
 ; Scrolls the screen by one line (=LINE_COLUMNS*FONT_HEIGHT bytes)
@@ -126,18 +131,18 @@ draw_carriage_return:
 scroll_screen:
 	clr POS_COLUMN	; cursor to first column
 	; "Read" Pointer to first char of second line
-	ldi YH, high(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
-	ldi YL, low(FRAMEBUFFER+LINE_COLUMNS*FONT_HEIGHT)
+	ldi YH, high(FRAMEBUFFER+(LINE_COLUMNS*FONT_HEIGHT))
+	ldi YL, low(FRAMEBUFFER+(LINE_COLUMNS*FONT_HEIGHT))
 	; "Write" Pointer to first char of first line
-	ldi XH, high(FRAMEBUFFER)
-	ldi XL, low(FRAMEBUFFER)
+	ldi ZH, high(FRAMEBUFFER)
+	ldi ZL, low(FRAMEBUFFER)
 	; Copy data
 	scroll_screen_copy_loop:
 		ld A, Y+
 		st Z+, A
-		cpi r31, high(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+		cpi ZH, high(FRAMEBUFFER_END-(LINE_COLUMNS*FONT_HEIGHT))
 		brne scroll_screen_copy_loop
-		cpi r30, low(FRAMEBUFFER_END-LINE_COLUMNS*FONT_HEIGHT)
+		cpi ZL, low(FRAMEBUFFER_END-(LINE_COLUMNS*FONT_HEIGHT))
 		brne scroll_screen_copy_loop
 	; All the lines have been "shifted" up by one line.
 	; The first line is lost and the last is duplicate. Clear the last.

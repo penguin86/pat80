@@ -28,10 +28,8 @@
 ; Cursor Position
 ;     POS_COLUMN (0-46) represents the character/chunk column
 ;     POS_ROWP (0-255) represent the chunk row. The caracter row is POS_ROWP/FONT_HEIGHT
-;     POS_FINE represents fine position (bit inside coarse-position-pointed chunk) in graphic mode.
 .def POS_COLUMN = r21
 .def POS_ROWP = r20
-.def POS_FINE = r24
 ; Internal registers
 .def A = r0	; accumulator
 .def STATUS = r25	; signal status (see STATUS TABLE)
