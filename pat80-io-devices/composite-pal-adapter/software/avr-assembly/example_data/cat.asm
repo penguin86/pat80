@@ -6,13 +6,13 @@ draw_cat:
 	ldi ZH, high(CAT_IMAGE)
 	ldi ZL, low(CAT_IMAGE)
 	load_cat_loop:
-		lpm r17, Z+
-		st Y+, r17
+		lpm HIGH_ACCUM, Z+
+		st Y+, HIGH_ACCUM
         ; wait
-        ser r19
-        cat_wait_loop_1:
-            dec r19
-            brne cat_wait_loop_1
+        ; ser r19
+        ; cat_wait_loop_1:
+        ;     dec r19
+        ;     brne cat_wait_loop_1
 		; if reached the last framebuffer byte, exit cycle
 		cpi YH, high(FRAMEBUFFER_END)
 		brne load_cat_loop	; if not 0, repeat h_picture_loop

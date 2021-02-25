@@ -3,6 +3,8 @@
 ; *        Video generator module           *
 ; *******************************************
 
+; Uses registers X(R27, R26), STATUS (R25), VG_HIGH_ACCUM (r24), LINE_COUNTER (r23)
+
 ; Implemented following timings in http://blog.retroleum.co.uk/electronics-articles/pal-tv-timing-and-voltages/ and http://www.kolumbus.fi/pami1/video/pal_ntsc.html
 ; Every line, for 46 times, it loads a byte from memory into PORTA register and then shifts the byte to the left to show another bit (do it 7 times)
 ; This also displays byte's MSB pixel "for free", as the video pin is PD7 (last bit of PORTA).
@@ -16,10 +18,10 @@
 ; The screen draw is divided in phases. Every phase does something. I.e. phases 0 to 9
 ; represents the first 5 long syncs:
 ; (sync goes low, wait 30uS, sync goes high, wait 2uS) x 5 times = 10 phases
-; When the interrupt is called, it uses register r25 (STATUS) to decide what to do.
+; When the interrupt is called, it uses register STATUS to decide what to do.
 ;
 ; STATUS TABLE:
-; R25 (STATUS): Current status (what the interrupt should do when fired):
+; reg STATUS: Current status (what the interrupt should do when fired):
 ;	0-9 = long sync
 ;	10-19 = short sync
 ;   20-44 = draw empty lines (top vertical padding)
@@ -72,10 +74,10 @@ long_sync:
 	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 	; set timer in 30uS (reset timer counter)
-	ldi r27, high(TIMER_DELAY_30US)
-	ldi r26, low(TIMER_DELAY_30US)
-	sts	TCNT1H,r27
-	sts	TCNT1L,r26
+	ldi XH, high(TIMER_DELAY_30US)
+	ldi XL, low(TIMER_DELAY_30US)
+	sts	TCNT1H,XH
+	sts	TCNT1L,XL
 	; clear BUSY pin to indicate the mc is again responsive from now on
 	cbi PORTD, BUSY_PIN
 	reti
@@ -84,10 +86,10 @@ long_sync:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
 		; set timer in 2uS:
-		ldi r27, high(TIMER_DELAY_2US)
-		ldi r26, low(TIMER_DELAY_2US)
-		sts	TCNT1H,r27
-		sts	TCNT1L,r26
+		ldi XH, high(TIMER_DELAY_2US)
+		ldi XL, low(TIMER_DELAY_2US)
+		sts	TCNT1H,XH
+		sts	TCNT1L,XL
 		; clear BUSY pin to indicate the mc is again responsive from now on
 		cbi PORTD, BUSY_PIN
 		reti
@@ -101,10 +103,10 @@ short_sync:
 	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 	; set timer in 2uS (reset timer counter)
-	ldi r27, high(TIMER_DELAY_2US)
-	ldi r26, low(TIMER_DELAY_2US)
-	sts	TCNT1H,r27
-	sts	TCNT1L,r26
+	ldi XH, high(TIMER_DELAY_2US)
+	ldi XL, low(TIMER_DELAY_2US)
+	sts	TCNT1H,XH
+	sts	TCNT1L,XL
 	; clear BUSY pin to indicate the mc is again responsive from now on
 	cbi PORTD, BUSY_PIN
 	reti
@@ -113,10 +115,10 @@ short_sync:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
 		; set timer in 30uS:
-		ldi r27, high(TIMER_DELAY_30US)
-		ldi r26, low(TIMER_DELAY_30US)
-		sts	TCNT1H,r27
-		sts	TCNT1L,r26
+		ldi XH, high(TIMER_DELAY_30US)
+		ldi XL, low(TIMER_DELAY_30US)
+		sts	TCNT1H,XH
+		sts	TCNT1L,XL
 		; clear BUSY pin to indicate the mc is again responsive from now on
 		cbi PORTD, BUSY_PIN
 		reti
@@ -128,10 +130,10 @@ empty_line:
 	; sync pin is high (sync is not occuring)
 	cbi	PORTC, SYNC_PIN	; sync goes low (0v)					; 2 cycle
 	; set timer in 2uS (reset timer counter)
-	ldi r27, high(TIMER_DELAY_4US)
-	ldi r26, low(TIMER_DELAY_4US)
-	sts	TCNT1H,r27
-	sts	TCNT1L,r26
+	ldi XH, high(TIMER_DELAY_4US)
+	ldi XL, low(TIMER_DELAY_4US)
+	sts	TCNT1H,XH
+	sts	TCNT1L,XL
 	; clear BUSY pin to indicate the mc is again responsive from now on
 	cbi PORTD, BUSY_PIN
 	reti
@@ -140,19 +142,15 @@ empty_line:
 		; sync pin is low (sync is occuring)
 		sbi	PORTC, SYNC_PIN	; sync goes high (0.3v)
 		; set timer in 30uS:
-		ldi r27, high(TIMER_DELAY_60US)
-		ldi r26, low(TIMER_DELAY_60US)
-		sts	TCNT1H,r27
-		sts	TCNT1L,r26
+		ldi XH, high(TIMER_DELAY_60US)
+		ldi XL, low(TIMER_DELAY_60US)
+		sts	TCNT1H,XH
+		sts	TCNT1L,XL
 		; clear BUSY pin to indicate the mc is again responsive from now on
 		cbi PORTD, BUSY_PIN
 		reti
 
 draw_picture:
-	; save X register
-	push XH
-	push XL
-
 	; set X register to framebuffer start
 	ldi XH, high(FRAMEBUFFER)
 	ldi XL, low(FRAMEBUFFER)
@@ -187,10 +185,6 @@ draw_picture:
 		brne h_picture_loop	; if not 0, repeat h_picture_loop		; 2 cycle if true, 1 if false
 	; end picture lines
 
-	; restore X register
-	pop XL
-	pop XH
-
 	; video pin goes low before sync
 	clr VG_HIGH_ACCUM											; 1 cycle
 	out VIDEO_PORT_OUT, VG_HIGH_ACCUM							; 1 cycle
@@ -207,1158 +201,1158 @@ draw_line:
 	; 46 chunks of 8 pixels
 
 	; chunk 1
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 2
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 3
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 4
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 5
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 6
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 7
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 8
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 9
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 10
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 11
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 12
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 13
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 14
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 15
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 16
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 17
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 18
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 19
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 20
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 21
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 22
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 23
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 24
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 25
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 26
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 27
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 28
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 29
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 30
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 31
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 32
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 33
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 34
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 35
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 36
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 37
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 38
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 39
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 40
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 41
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 42
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 43
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 44
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 45
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
 	; chunk 46
-	ld A, X+	; load pixel	; 2 cycles
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	ld VG_HIGH_ACCUM, X+	; load pixel	; 2 cycles
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 	nop							; 1 cycle
-	lsr A						; 1 cycle
-	out VIDEO_PORT_OUT, A				; 1 cycle
+	lsr VG_HIGH_ACCUM						; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM				; 1 cycle
 
-	; blank right margin
-	clr A					; 1 cycle
-	out VIDEO_PORT_OUT, A	; 1 cycle
+	; blank right margin (write 0 to video port and wait)
+	clr VG_HIGH_ACCUM					; 1 cycle
+	out VIDEO_PORT_OUT, VG_HIGH_ACCUM	; 1 cycle
 	ldi VG_HIGH_ACCUM, 28									; 1 cycle
 	eol_porch_loop: ; requires 3 cpu cycles
 		dec VG_HIGH_ACCUM									; 1 cycle

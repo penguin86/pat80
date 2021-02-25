@@ -25,32 +25,30 @@
 .include "m1284def.inc" ; Atmega 1280 device definition
 
 ; *** reserved registers ***
-; Cursor Position
-;     POS_COLUMN (0-46) represents the character/chunk column
-;     POS_ROWP (0-255) represent the chunk row. The caracter row is POS_ROWP/FONT_HEIGHT
-.def POS_COLUMN = r21
-.def POS_ROWP = r20
-; Internal registers
-.def A = r0	; accumulator
+; Video generator registers:
+; X(R27, R26)
 .def STATUS = r25	; signal status (see STATUS TABLE)
-;POS_COARSE = Y	; coarse position (aligned to character column)
-;DRAWING_BYTE = X	; current position in framebuffer
+.def VG_HIGH_ACCUM = r24 ; an accumulator in high registers to be used only by video_generator in interrupt
 .def LINE_COUNTER = r23
-.def VG_HIGH_ACCUM = r22 ; an accumulator in high registers to be used only by video_generator in interrupt
-.def HIGH_ACCUM = r16 ; an accumulator in high registers to be used outside of interrupts
 
-; define constant
+; Character generator registers:
+.def POS_COLUMN = r22 ; POS_COLUMN (0-46) represents the character/chunk column
+.def POS_ROWP = r21 ; POS_ROWP (0-255) represent the chunk row. The caracter row is POS_ROWP/FONT_HEIGHT
+.def HIGH_ACCUM = r20 ; an accumulator in high registers to be used outside of interrupts
+.def A = r0	; general purpose accumulator to be used outside of interrupts
+
+; Hardware pins and ports
 .equ VIDEO_PORT_OUT = PORTA		; Used all PORTA, but connected only PA0
 .equ SYNC_PIN = PC0			; Sync pin (pin 22)
 .equ DEBUG_PIN = PC1		; DEBUG: Single vertical sync pulse to trigger oscilloscope (pin 23)
-.equ DATA_PORT_IN = PINB
-.equ CLK_PIN = PD0
-.equ RS_PIN = PD1
-.equ BUSY_PIN = PD2
+.equ DATA_PORT_IN = PIND
+.equ CLK_PIN = PC2
+.equ RS_PIN = PC3
+.equ BUSY_PIN = PC4
 
-; memory
-.equ FRAMEBUFFER = 0x0100
-.equ FRAMEBUFFER_END = 0x2F00
+; Memory map
+.equ FRAMEBUFFER = 0x0F70
+.equ FRAMEBUFFER_END = 0x3C00
 .equ SCREEN_HEIGHT = 248
 
 ; start vector
@@ -77,19 +75,7 @@ main:
 
 	; **** MEMORY SETUP ****
 
-	; clear ram
-	;*** Load data into ram ***
-	Set X to 0x0100
-	ldi XH, high(FRAMEBUFFER)
-	ldi XL, low(FRAMEBUFFER)
-	load_mem_loop:
-		clr r17
-		st X+, r17
-		; if reached the last framebuffer byte, exit cycle
-		cpi XH, 0b00111110
-		brne load_mem_loop	; if not 0, repeat h_picture_loop
-		cpi XL, 0b11000000
-		brne load_mem_loop	; if not 0, repeat h_picture_loop
+	call clear_screen
 
 	
 
@@ -118,7 +104,7 @@ main:
 	; **** MAIN ROUTINE ****
 
 	; Wait for data (it never exits)
-	; jmp comm_init
+	;jmp comm_init
 
 
 	; draw example image
@@ -144,7 +130,7 @@ main:
 			inc r18
 			cpi r18, 0x5B
 			brne draw_chars
-		call draw_carriage_return
+		; call draw_carriage_return
 		jmp dctest
 
 	
@@ -160,4 +146,4 @@ main:
 .include "character_generator.asm" ; Character generator
 ;.include "communication.asm" ; Communication with Pat80
 .include "font.asm"	; Font face
-.include "example_data/cat.asm"	; Cat image
+;.include "example_data/cat.asm"	; Cat image

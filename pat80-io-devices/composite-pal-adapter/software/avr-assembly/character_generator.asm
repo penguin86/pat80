@@ -9,9 +9,15 @@
 .equ LINE_COLUMNS = 46	; number of columns (characters or chunks) per line
 
 ; Draws character in register A to the screen at current coords (Y)
-; @param r16 (HIGH_ACCUM) ascii code to display
-; @modifies r0 (A), r1, r2, r3, r16 (HIGH_ACCUM), r17, Y, Z
+; @param (HIGH_ACCUM) ascii code to display
+; @modifies r0 (A), r1, r2, r3, r17, HIGH_ACCUM, Y, Z
 draw_char:
+	; Check char is valid
+	cpi HIGH_ACCUM, 0x7f
+	brlo draw_char_valid
+	ret
+
+	draw_char_valid:
 	; Glyph's first byte is at:
 	; glyph_pointer = font_starting_mem_pos + (ascii_code * number_of_bytes_per_font)
 	; But all the fonts are 1 byte large, so a glyph is 1*height bytes:
@@ -130,11 +136,25 @@ update_mem_pointer:
 	; ...+POS_COLUMN
 	add r0, POS_COLUMN
 	clr HIGH_ACCUM
-	adc r0, HIGH_ACCUM
+	adc r1, HIGH_ACCUM
 	; Set pointer to start of framebuffer
 	ldi YL, low(FRAMEBUFFER)
 	ldi YH, high(FRAMEBUFFER)
 	; Add offset to pointer
 	add YL, r0
 	adc YH, r1
+	ret
+
+clear_screen:
+	ldi YH, high(FRAMEBUFFER)
+	ldi YL, low(FRAMEBUFFER)
+	load_mem_loop:
+		clr HIGH_ACCUM
+		;ser HIGH_ACCUM
+		st Y+, HIGH_ACCUM
+		; if reached the last framebuffer byte, exit cycle
+		cpi YH, high(FRAMEBUFFER_END)
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
+		cpi YL, low(FRAMEBUFFER_END)
+		brne load_mem_loop	; if not 0, repeat h_picture_loop
 	ret
