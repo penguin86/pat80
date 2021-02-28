@@ -121,16 +121,53 @@ main:
 			; wait
 			ser r19
 			dc_wait_loop_1:
-				ldi r24, 64
+				ser r16
 				dc_wait_loop_2:
-					dec r24
+					dec r16
 					brne dc_wait_loop_2
 				dec r19
 				brne dc_wait_loop_1
+			; wait
+			; ser r19
+			; dc_wait_loop_a1:
+			; 	ser r16
+			; 	dc_wait_loop_a2:
+			; 		dec r16
+			; 		brne dc_wait_loop_a2
+			; 	dec r19
+			; 	brne dc_wait_loop_a1
+			; ; wait
+			; ser r19
+			; dc_wait_loop_s1:
+			; 	ser r16
+			; 	dc_wait_loop_s2:
+			; 		dec r16
+			; 		brne dc_wait_loop_s2
+			; 	dec r19
+			; 	brne dc_wait_loop_s1
+			; ; wait
+			; ser r19
+			; dc_wait_loop_d1:
+			; 	ser r16
+			; 	dc_wait_loop_d2:
+			; 		dec r16
+			; 		brne dc_wait_loop_d2
+			; 	dec r19
+			; 	brne dc_wait_loop_d1
+			; ; wait
+			; ser r19
+			; dc_wait_loop_f1:
+			; 	ser r16
+			; 	dc_wait_loop_f2:
+			; 		dec r16
+			; 		brne dc_wait_loop_f2
+			; 	dec r19
+			; 	brne dc_wait_loop_f1
+
 			inc r18
 			cpi r18, 0x5B
 			brne draw_chars
-		; call draw_carriage_return
+		call draw_carriage_return
 		jmp dctest
 
 	

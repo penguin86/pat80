@@ -37,17 +37,18 @@ draw_char:
 	call update_mem_pointer
 	; The drawing consist of FONT_HEIGHT cycles. Every glyph byte is placed on its own line
 	; on screen. To do this, we place it LINE_COLUMNS bytes after the previous one.
-	ldi HIGH_ACCUM, FONT_HEIGHT
+	clr HIGH_ACCUM
 	draw_char_loop:
 		; Load glyph line byte from program memory (and point to the next)
-		lpm r1, Z+
+		lpm A, Z+
 		; Write glyph line to framebuffer at chunk cursor position (Y)
-		st Y, r1
+		st Y, A
 		; Increment chunk cursor position (Y) to next line of the same char column
 		adiw YH:YL,LINE_COLUMNS
 		; Decrement loop counter and exit if reached 0
-		dec HIGH_ACCUM
-		brne draw_char_loop
+		inc HIGH_ACCUM
+		cpi HIGH_ACCUM, FONT_HEIGHT
+		brlo draw_char_loop
 
 	; Char drawing is complete. Increment cursor position
 	inc POS_COLUMN
