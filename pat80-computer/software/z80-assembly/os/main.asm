@@ -56,8 +56,8 @@ Sys_Printc:
 ; Reads a single character
 ; @return A The read character
 Sys_Readc:
-    ;jp Term_readc
-    jp PS2Keyb_readc
+    jp Term_readc
+    ;jp PS2Keyb_readc
 
 ; Reads a line
 ; @return BC The pointer to a null-terminated read string
@@ -74,6 +74,7 @@ Sys_Beep:
 SYS_VAR_SPACE: EQU 0x8000
 DRV_VAR_SPACE: EQU 0x9000
 APP_SPACE: EQU 0xA000
+MEM_END: EQU 0xFFFF
 
 ; SYSTEM CONFIGURATION
 IO_0: EQU 0x00
@@ -116,19 +117,19 @@ Sysinit:
     call Sys_Beep
 
 	; Run memory monitor
-	; ei ; enable maskabpe interrupts
-	; im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
-	; rst 0x38 ; throw fake interrupt: jump to interrupt routine to start monitor
+	ei ; enable maskabpe interrupts
+	im 1 ; set interrupt mode 1 (on interrupt jumps to 0x38)
+	rst 0x38 ; throw fake interrupt: jump to interrupt routine to start monitor
 
     ; Keyboard test
-    ld a, 0x3E
-    call Sys_Printc
-    ktestloop:
-        call Sys_Readc
-        call Sys_Printc
-        ld a, 46
-        call Sys_Printc
-        jp ktestloop
+    ; ld a, 0x3E
+    ; call Sys_Printc
+    ; ktestloop:
+    ;     call Sys_Readc
+    ;     call Sys_Printc
+    ;     ld a, 46
+    ;     call Sys_Printc
+    ;     jp ktestloop
 
 	; User exited from memory monitor without loading a program. Do nothing.
 	mloop:

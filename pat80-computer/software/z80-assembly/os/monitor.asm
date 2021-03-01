@@ -26,6 +26,9 @@ MON_ARG_HEX: DB "    0x",0
 MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nZERO [ADDR] [ADDR] sets all bytes to 0 in the specified range\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge\nQUIT exits",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
+MON_RAMTEST_INTRO: DB "Memory check... ",0
+MON_RAMTEST_RAMSTART: DB " Ram starts at 0x",0
+MON_RAMTEST_OK: DB " bytes OK",0
 ;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
 MON_DUMP_BYTES_LINES: EQU 8
 MON_DUMP_BYTES_PER_LINE: EQU 8
@@ -548,6 +551,58 @@ monitor_copyTermToAppMem:
         dec d
         jp monitor_copyTermToAppMem_loop   ; continue loop
 
+; Runs a memory test to identify ram memory boundaries and check the ram is working.
+; Starting from last memory position, writes 0xFF, reads it back, writes 0x00, reads it back.
+; Exits when the first value differs from the written value (this may be caused by a bad ram
+; block or the start of rom in memory map). Prints the last good address on exit.
+monitor_ramTest:
+	; Prints intro
+    ld bc, MON_RAMTEST_INTRO
+    call Sys_Print
+	; Starts checking
+	ld hl, MEM_END
+	monitor_ramTest_loop:
+		; Write 0xFF
+		ld a, 0xFF
+		ld (hl), a
+		; Read and compare 0xFF
+		ld a, (hl)
+		cp 0xFF
+		jp nz, monitor_ramTest_badram
+		; Write 0x00
+		ld a, 0x00
+		ld (hl), a
+		; Read and compare 0xFF
+		ld a, (hl)
+		cp 0x00
+		jp nz, monitor_ramTest_badram
+		; Memory byte is good, next one
+		dec hl
+		jp monitor_ramTest_loop
+	monitor_ramTest_badram:
+		; Found a bad memory byte (or entered rom block).
+		ld bc, MON_RAMTEST_RAMSTART
+		call Sys_Print		
+		; Print memory addr
+        ld a, h
+        call monitor_printHexByte
+        ld a, l
+        call monitor_printHexByte
+		; Print message
+		ld a, ','
+		call Sys_Printc
+		ld a, ' '
+		call Sys_Printc
+		; Print number of valid bytes
+		ld bc, hl ; move hl to bc
+		ld hl, 0xFFFF
+		sbc hl, bc ; obtain number of good mem bytes
+		; TODO: Implement 16-bit integer print
+
+		; Print message
+		ld bc, MON_RAMTEST_OK
+		call Sys_Print
+		ret
 
 
 
