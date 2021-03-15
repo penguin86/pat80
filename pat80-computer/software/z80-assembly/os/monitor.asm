@@ -27,9 +27,8 @@ MON_ARG_HEX: DB "    0x",0
 MON_HELP: DB 10,"Available commands:\nHELP prints this message\nDUMP [ADDR] shows memory content\nSET [ADDR] sets memory content\nZERO [ADDR] [ADDR] sets all bytes to 0 in the specified range\nLOAD\nRUN [ADDR] executes code starting from ADDR\nADB starts Assembly Deploy Bridge\nMEMTEST checks ram boundaries\nQUIT exits",0
 MON_MSG_ADB: DB 10,"Waiting for data.",0
 MON_ERR_SYNTAX: DB "    Syntax error",0
-MON_RAMTEST_INTRO: DB " Checking memory... ",0
-MON_RAMTEST_RAMSTART: DB " Ram starts at 0x",0
-;MON_ADB_TIMEOUT: EQU 0xFF     // Number of cycles after an ADB binary transfer is considered completed
+; MON_RAMTEST_INTRO: DB " Checking memory... ",0
+; MON_RAMTEST_RAMSTART: DB " Ram starts at 0x",0
 MON_DUMP_BYTES_LINES: EQU 8
 MON_DUMP_BYTES_PER_LINE: EQU 8
 
@@ -70,9 +69,9 @@ Monitor_main:
         ld hl, MON_COMMAND_ADB
         cp (hl)
         jp z, monitor_adb
-        ld hl, MON_COMMAND_MEMTEST
-        cp (hl)
-        jp z, monitor_memtest
+        ; ld hl, MON_COMMAND_MEMTEST
+        ; cp (hl)
+        ; jp z, monitor_memtest
         ld hl, MON_COMMAND_QUIT
 		cp (hl)
 		jp z, monitor_quit
