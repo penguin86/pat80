@@ -51,8 +51,6 @@ F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc0006.pdf" H 6850 1700 50
 	0    -1   -1   0   
 $EndComp
 Entry Wire Line
-	4150 1450 4250 1550
-Entry Wire Line
 	4150 1550 4250 1650
 Entry Wire Line
 	4150 1650 4250 1750
@@ -486,16 +484,18 @@ Text Label 3950 3750 0    50   ~ 0
 D6
 Text Label 3950 3850 0    50   ~ 0
 D7
+Entry Wire Line
+	4150 1450 4250 1550
 Wire Bus Line
-	4250 3250 4250 4350
+	6050 1100 8600 1100
 Wire Bus Line
 	6050 2650 8600 2650
 Wire Bus Line
-	6050 1100 8600 1100
+	4250 3250 4250 4350
+Wire Bus Line
+	4250 1550 4250 3050
 Wire Bus Line
 	5100 2300 7250 2300
 Wire Bus Line
 	5100 4050 7250 4050
-Wire Bus Line
-	4250 1450 4250 3050
 $EndSCHEMATC

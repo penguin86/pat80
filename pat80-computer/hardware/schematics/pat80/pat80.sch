@@ -29,17 +29,6 @@ F 3 "www.zilog.com/manage_directlink.php?filepath=docs/z80/um0080" H 3150 3050 5
 	1    0    0    -1  
 $EndComp
 $Comp
-L idleengineer:HM62256BLP-7 U2
-U 1 1 604FA19C
-P 6700 3350
-F 0 "U2" V 6746 2506 50  0000 R CNN
-F 1 "256k (32k x 8) SRAM" V 6655 2506 50  0000 R CNN
-F 2 "DIP28" H 6700 3350 50  0001 C CIN
-F 3 "" H 6700 3350 50  0001 C CNN
-	1    6700 3350
-	0    -1   -1   0   
-$EndComp
-$Comp
 L Memory_EEPROM:28C256 U3
 U 1 1 604F6B81
 P 6850 1700
