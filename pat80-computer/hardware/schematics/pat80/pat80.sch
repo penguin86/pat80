@@ -2244,4 +2244,6 @@ Wire Bus Line
 	14150 1700 14150 7600
 Wire Bus Line
 	1550 1150 1550 4000
+Text Notes 950  4450 0    50   ~ 0
+IOBUS connector is inserted into a passive backplane\nthat can be seen in the Backplane schematics.
 $EndSCHEMATC
