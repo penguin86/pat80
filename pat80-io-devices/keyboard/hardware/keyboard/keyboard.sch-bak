@@ -13,9 +13,9 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Notes 4600 1050 0    197  ~ 0
+Text Notes 4600 1550 0    197  ~ 0
 PAT80 Keyboard
-Text Notes 4000 1750 0    47   ~ 0
+Text Notes 4000 2250 0    47   ~ 0
 The PAT80 keyboard is seen from the computer as a readonly block of 64 bytes of memory\nin the I/O space mapped to the first 3 of the 5 I/O address available for every single I/O device.\n\nThe keyboard controller is a board plugged on the I/O backplane and connected to the matrix board with a\n34-pin female-to-female flat ribbon cable (e.g. the ones used by IBM PC floppy disk drives)\n\nThe joystick port is Atari-style: partially C64 and MSX compatible (supports a single button and no analog paddle)
 $Comp
 L Connector_Generic:Conn_02x17_Odd_Even J3
@@ -171,7 +171,6 @@ Text Label 9450 4500 0    47   ~ 0
 ROW6
 Text Label 9450 4600 0    47   ~ 0
 ROW7
-Connection ~ 10250 4600
 $Comp
 L Device:D D49
 U 1 1 607F7C88
@@ -217,38 +216,21 @@ Text Label 9000 4900 0    47   ~ 0
 COL7
 Wire Wire Line
 	9750 3800 9400 3800
-Wire Wire Line
-	9400 3800 9400 5050
 Text Label 9450 3800 0    47   ~ 0
 MTXVCC
 $Comp
 L Device:C C5
 U 1 1 6159FE0F
-P 9800 5050
-F 0 "C5" V 9548 5050 50  0000 C CNN
-F 1 "56pF" V 9639 5050 50  0000 C CNN
-F 2 "Capacitor_THT:CP_Radial_Tantal_D6.0mm_P5.00mm" H 9838 4900 50  0001 C CNN
-F 3 "~" H 9800 5050 50  0001 C CNN
-	1    9800 5050
+P 2400 13300
+F 0 "C5" V 2148 13300 50  0000 C CNN
+F 1 "56pF" V 2239 13300 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_Tantal_D6.0mm_P5.00mm" H 2438 13150 50  0001 C CNN
+F 3 "~" H 2400 13300 50  0001 C CNN
+	1    2400 13300
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	9650 5050 9400 5050
-Connection ~ 9400 5050
-Wire Wire Line
-	9400 5050 9400 5650
-Text Notes 9550 5250 0    47   ~ 0
+Text Notes 2200 13850 0    47   ~ 0
 Smoothing cap\n
-NoConn ~ 10250 5800
-Text Notes 9950 5950 0    47   ~ 0
-PCB Ground plane
-Wire Wire Line
-	10250 4600 10250 5050
-Wire Wire Line
-	9950 5050 10250 5050
-Connection ~ 10250 5050
-Wire Wire Line
-	10250 5050 10250 5800
 Connection ~ 8200 5250
 Wire Wire Line
 	7900 5650 9100 5650
@@ -540,7 +522,6 @@ Entry Wire Line
 Connection ~ 6200 5650
 Text Notes 5600 11900 0    47   ~ 0
 Keyboard matrix
-Connection ~ 9400 5650
 Connection ~ 5700 6050
 Connection ~ 4900 6050
 Connection ~ 4100 6050
@@ -1923,7 +1904,7 @@ L Switch:SW_DPDT_x2 SW54
 U 1 1 606953A4
 P 6950 6250
 F 0 "SW54" V 6996 6062 50  0000 R CNN
-F 1 "CAPSLK" V 6905 6062 50  0000 R CNN
+F 1 "CAPSLK_LED" V 6905 6062 50  0000 R CNN
 F 2 "footprints:SW_TH_DPDT_Pushbutton_Latched" H 6950 6250 50  0001 C CNN
 F 3 "" H 6950 6250 50  0001 C CNN
 	1    6950 6250
@@ -1938,10 +1919,10 @@ Wire Wire Line
 	7050 6050 7450 6050
 Connection ~ 7450 6050
 $Comp
-L Switch:SW_DPDT_x2 SW9
+L Switch:SW_DPDT_x2 SW54
 U 2 1 6074126F
 P 5350 13250
-F 0 "SW9" H 5350 13535 50  0000 C CNN
+F 0 "SW54" H 5350 13535 50  0000 C CNN
 F 1 "CAPSLK_LED" H 5350 13444 50  0000 C CNN
 F 2 "footprints:SW_TH_DPDT_Pushbutton_Latched" H 5350 13250 50  0001 C CNN
 F 3 "" H 5350 13250 50  0001 C CNN
@@ -1956,6 +1937,81 @@ Text Notes 6600 5950 0    50   ~ 0
 Caps lock switch is double pole,\nthe second pole controls\nthe caps lock led
 NoConn ~ 6850 6050
 NoConn ~ 5550 13150
+Wire Wire Line
+	9400 11250 9400 11500
+Wire Wire Line
+	9400 11500 9600 11500
+Connection ~ 9400 11250
+$Comp
+L power:VCC #PWR?
+U 1 1 6076CE62
+P 9600 11500
+F 0 "#PWR?" H 9600 11350 50  0001 C CNN
+F 1 "VCC" H 9617 11673 50  0000 C CNN
+F 2 "" H 9600 11500 50  0001 C CNN
+F 3 "" H 9600 11500 50  0001 C CNN
+	1    9600 11500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9400 3800 9400 3850
+$Comp
+L power:VCC #PWR?
+U 1 1 6078C764
+P 8800 4050
+F 0 "#PWR?" H 8800 3900 50  0001 C CNN
+F 1 "VCC" H 8817 4223 50  0000 C CNN
+F 2 "" H 8800 4050 50  0001 C CNN
+F 3 "" H 8800 4050 50  0001 C CNN
+	1    8800 4050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8800 4050 9150 4050
+Wire Wire Line
+	9150 4050 9150 3850
+Wire Wire Line
+	9150 3850 9400 3850
+Wire Wire Line
+	10250 4600 10600 4600
+Connection ~ 10250 4600
+$Comp
+L power:GND #PWR?
+U 1 1 6079E0E1
+P 10600 4600
+F 0 "#PWR?" H 10600 4350 50  0001 C CNN
+F 1 "GND" H 10605 4427 50  0000 C CNN
+F 2 "" H 10600 4600 50  0001 C CNN
+F 3 "" H 10600 4600 50  0001 C CNN
+	1    10600 4600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:VCC #PWR?
+U 1 1 607C8BE9
+P 1850 13300
+F 0 "#PWR?" H 1850 13150 50  0001 C CNN
+F 1 "VCC" H 1867 13473 50  0000 C CNN
+F 2 "" H 1850 13300 50  0001 C CNN
+F 3 "" H 1850 13300 50  0001 C CNN
+	1    1850 13300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1850 13300 2250 13300
+$Comp
+L power:GND #PWR?
+U 1 1 607D1F15
+P 3100 13300
+F 0 "#PWR?" H 3100 13050 50  0001 C CNN
+F 1 "GND" H 3105 13127 50  0000 C CNN
+F 2 "" H 3100 13300 50  0001 C CNN
+F 3 "" H 3100 13300 50  0001 C CNN
+	1    3100 13300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3100 13300 2550 13300
 Wire Bus Line
 	9250 3100 9250 3800
 Wire Bus Line
