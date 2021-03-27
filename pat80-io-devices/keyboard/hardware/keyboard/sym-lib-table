@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name pat80)(type Legacy)(uri /home/danieleverducci/git/pato-z80-home-computer/kicad-symbols/pat80.lib)(options "")(descr ""))
+)
