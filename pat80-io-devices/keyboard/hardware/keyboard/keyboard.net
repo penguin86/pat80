@@ -1,7 +1,7 @@
 (export (version D)
   (design
     (source /home/danieleverducci/git/pato-z80-home-computer/pat80-io-devices/keyboard/hardware/keyboard/keyboard.sch)
-    (date "dom 28 mar 2021 21:55:56 CEST")
+    (date "lun 29 mar 2021 07:31:01 CEST")
     (tool "Eeschema 5.1.9+dfsg1-1~bpo10+1")
     (sheet (number 1) (name /) (tstamps /)
       (title_block
