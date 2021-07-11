@@ -1,4 +1,23 @@
-/* PS/2 Keyboard controller debugger */
+/*
+ * This file is part of Pat80 Utils.
+ *
+ * Pat80 Utils is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Pat80 Utils is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY * without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Pat80 Utils.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * PS/2 Keyboard controller debugger
+ * Used to intercept data decoded from Pat80 PS/2 keyboard adapter
+ */
 
 #define EN 2
 const byte DATA_BUS[] = {10, 9, 8, 7, 6, 5, 4, 3};

@@ -1,5 +1,23 @@
 ; Pat80 Memory Monitor
 ; @author Daniele Verducci
+; @language: Z80 ASM
+;
+;
+; This file is part of Pat80 Memory Monitor.
+;
+; Pat80 Memory Monitor is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; Pat80 Memory Monitor is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with Pat80 Memory Monitor.  If not, see <http://www.gnu.org/licenses/>.
+;
 ;
 ; Monitor commands (CMD $arg):
 ;   H (HELP) Shows available commands
@@ -558,17 +576,17 @@ monitor_copyTermToAppMem:
 ; Exits when the first value differs from the written value (this may be caused by a bad ram
 ; block or the start of rom in memory map). Prints the last good address on exit.
 ; monitor_memtest:
-;     ld bc, MON_COMMAND_MEMTEST + 1 ; autocomplete command
-;     call Sys_Print
+;  ld bc, MON_COMMAND_MEMTEST + 1 ; autocomplete command
+;  call Sys_Print
 ; 	; Prints intro
-;     ld bc, MON_RAMTEST_INTRO
-;     call Sys_Print
+;  ld bc, MON_RAMTEST_INTRO
+;  call Sys_Print
 ; 	; Starts checking
 ; 	ld hl, MEM_END
 ; 	monitor_memtest_loop:
 ; 		; Save current byte value for later restore
-;         ld c, (hl)
-;         ; Write 0xFF
+;      ld c, (hl)
+;      ; Write 0xFF
 ; 		ld a, 0xFF
 ; 		ld (hl), a
 ; 		; Read and compare 0xFF
@@ -583,8 +601,8 @@ monitor_copyTermToAppMem:
 ; 		cp 0x00
 ; 		jp nz, monitor_memtest_badram
 ; 		; Memory byte is good, restore previous value
-;         ld (hl), c
-;         ; Next one
+;      ld (hl), c
+;      ; Next one
 ; 		dec hl
 ; 		jp monitor_memtest_loop
 ; 	monitor_memtest_badram:
@@ -592,15 +610,15 @@ monitor_copyTermToAppMem:
 ; 		ld bc, MON_RAMTEST_RAMSTART
 ; 		call Sys_Print
 ; 		; Print last valid memory addr
-;         inc hl
-;         ld a, h
-;         call monitor_printHexByte
-;         ld a, l
-;         call monitor_printHexByte
-;         ; Newline
-;         ld a, 10
-;         call Sys_Printc
-;         ; Back to menu
+;      inc hl
+;      ld a, h
+;      call monitor_printHexByte
+;      ld a, l
+;      call monitor_printHexByte
+;      ; Newline
+;      ld a, 10
+;      call Sys_Printc
+;      ; Back to menu
 ; 		jp monitor_main_loop
 
 

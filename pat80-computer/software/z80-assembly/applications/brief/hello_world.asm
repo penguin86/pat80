@@ -1,3 +1,5 @@
+; @language: Z80 ASM
+
 org 0xA000
 include '../../os/abi-generated.asm'
 

@@ -1,10 +1,29 @@
 /**
  * Terminal interface.
+ *
+ * * @language: AVR ASM
+ *
+ * This file is part of Pat80 IO Devices.
+ *
+ * Pat80 IO Devices is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Pat80 IO Devices is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY * without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Pat80 IO Devices.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
  * This sketch allow an Arduino to be used as a terminal to log into Pat80.
  * The Arduino is connected to the Pat80 I/O bus and to the terminal computer via USB.
- * The Python Terminal Monitor or the Arduino IDE serial monitor is used to send 
+ * The Python Terminal Monitor or the Arduino IDE serial monitor is used to send
  * and receive commands to/from the Z80.
- * 
+ *
  * Seen from the Pat80, the terminal interface has two registers:
  * DATA Register at addr 0x00 (\RS) contains the last received byte from the pc
  * DATA_AVAILABLE Register at addr 0x01 (RS) contains the number of bytes in the buffer,

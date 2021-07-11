@@ -1,4 +1,5 @@
 ; PS/2 Keycode Mode 2 to ASCII mapping table
+; @language: Z80 ASM
 ;
 ; Keycodes 0 to 83
 

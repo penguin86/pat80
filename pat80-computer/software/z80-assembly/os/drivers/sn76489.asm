@@ -1,5 +1,23 @@
-; TI SN76489 sound chip display driver
+; TI SN76489 sound chip driver
 ; @author Daniele Verducci
+; @language: Z80 ASM
+;
+;
+; This file is part of Pat80 Memory Monitor.
+;
+; Pat80 Memory Monitor is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; Pat80 Memory Monitor is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with Pat80 Memory Monitor.  If not, see <http://www.gnu.org/licenses/>.
+;
 ;
 ; USAGE:
 ; call Snd_init                     <-- inits sound (and silences default tone)
