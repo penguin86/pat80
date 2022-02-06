@@ -1,3 +1,4 @@
+; @language: Z80 ASM
 ;hd44780 lcd test procedure
 
 LCD_INSTR_REG: EQU %00000000

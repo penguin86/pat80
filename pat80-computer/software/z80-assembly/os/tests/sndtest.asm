@@ -1,3 +1,5 @@
+; @language: Z80 ASM
+
 SndTest_test:
     ; ch1 max volume
     ld a,%10010000
