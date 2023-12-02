@@ -34,6 +34,12 @@ There is an experimental and unfinished quick load function using a python termi
 
 ![Pat80 Memory Monitor](/assets/media/photos/memory_monitor.jpg)
 
+## Emulator
+The pat80 memory monitor (the os) can be run in a z80 emulator. This repository contains an emulator as submodule, already set up to run the os.
+To try it, head to `pat80-computer/software/z80-assembly/os/Makefile` and run `make run` to build the rom from assembly and start the emulator. You will see some windows showing the emulated computer's memory and register status and the pat80 memory monitor prompt.
+
+![Emulator running Memory Monitor](/assets/media/photos/emulator.png)
+
 ## Status
 The project is heavily work in progress.
 

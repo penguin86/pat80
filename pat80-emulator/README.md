@@ -1,9 +1,7 @@
 # PAT80 Emulator
-Uses algodesigner's Z80 emulator (see submodule in z80 folder).
-Instances the Z80 object (representing the CPU) and:
-- intercepts all memory access and returns the corresponding rom value (read from rom file) if PC is in first 32k of memory (TODO)
-- intercepts all memory access and stops execution returning error if trying to write to first 32k of memory (TODO)
+This folder contains a submodule (you should fetch it if you need to run the os in an emulator).
+
+Uses cburbridge's Z80 emulator written in python. It opens some windows showing the emulated computer's memory map, the cpu registers state and parallel terminal to interact with the os.
 
 ## Usage
-Build with `make all`
-Run with `./pat80emu`
+To run the os in the emulator, head to `pat80-computer/software/z80-assembly/os/Makefile` and run `make run` to build the rom from assembly and start the emulator.

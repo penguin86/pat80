@@ -1,3 +1,3 @@
-[submodule "pat80-emulator/z80"]
-	path = pat80-emulator/z80
-	url = git@github.com:algodesigner/z80.git
+[submodule "pat80-emulator/z80-python-emulator"]
+	path = pat80-emulator/z80-python-emulator
+	url = https://github.com/penguin86/z80-python-emulator.git
